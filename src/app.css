@@ -1,0 +1,167 @@
+@import 'tailwindcss';
+
+@font-face {
+	font-family: 'Inter';
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src:
+		url('/fonts/Inter-Regular.woff2') format('woff2'),
+		url('/fonts/Inter-Regular.woff') format('woff');
+}
+
+@font-face {
+	font-family: 'Inter';
+	font-style: italic;
+	font-weight: 400;
+	font-display: swap;
+	src:
+		url('/fonts/Inter-Italic.woff2') format('woff2'),
+		url('/fonts/Inter-Italic.woff') format('woff');
+}
+
+@font-face {
+	font-family: 'Inter';
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src:
+		url('/fonts/Inter-Medium.woff2') format('woff2'),
+		url('/fonts/Inter-Medium.woff') format('woff');
+}
+
+@font-face {
+	font-family: 'Inter';
+	font-style: italic;
+	font-weight: 500;
+	font-display: swap;
+	src:
+		url('/fonts/Inter-MediumItalic.woff2') format('woff2'),
+		url('/fonts/Inter-MediumItalic.woff') format('woff');
+}
+
+@font-face {
+	font-family: 'Inter';
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src:
+		url('/fonts/Inter-Bold.woff2') format('woff2'),
+		url('/fonts/Inter-Bold.woff') format('woff');
+}
+
+@font-face {
+	font-family: 'Inter';
+	font-style: italic;
+	font-weight: 700;
+	font-display: swap;
+	src:
+		url('/fonts/Inter-BoldItalic.woff2') format('woff2'),
+		url('/fonts/Inter-BoldItalic.woff') format('woff');
+}
+
+@theme {
+	--color-primary: #1a1d21;
+	--color-secondary: #1f2937;
+	--color-accent: #6FC1FF;
+	--color-border: #374151;
+	--color-text-primary: #ffffff;
+	--color-text-secondary: #d1d5db;
+	--color-text-tertiary: #9ca3af;
+	--color-code-bg: #0d1117;
+	--color-cursor: #6FC1FF;
+	--color-gray-850: #1f2937;
+	--color-gray-750: #374151;
+	--font-mono: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Menlo', 'Courier New', monospace;
+}
+
+/* CSS Reset */
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+* {
+	margin: 0;
+}
+
+/* Base styles */
+body {
+	margin: 0;
+	padding: 0;
+	background-color: #1a1d21;
+	color: #ffffff;
+	font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+	min-height: 100vh;
+	line-height: 1.6;
+}
+
+a {
+	color: inherit;
+	text-decoration: none;
+	transition: color 0.2s ease;
+}
+
+a:hover {
+	color: #6fc1ff;
+}
+
+/* Terminal cursor animation */
+.terminal-cursor::after {
+	content: '_';
+	animation: blink 1s infinite;
+	color: #6fc1ff;
+}
+
+@keyframes blink {
+	0%,
+	50% {
+		opacity: 1;
+	}
+	51%,
+	100% {
+		opacity: 0;
+	}
+}
+
+/* Header nav hover */
+header nav a:hover {
+	color: #6fc1ff !important;
+}
+
+/* Global link styles */
+.link-accent {
+	color: #6fc1ff;
+	text-decoration: none;
+	transition: all 0.2s ease;
+}
+
+.link-accent:hover {
+	text-decoration: underline;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: #1a1d21;
+}
+
+::-webkit-scrollbar-thumb {
+	background: #374151;
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: #4b5563;
+}
+
+/* Selection styling */
+::selection {
+	background-color: rgba(111, 193, 255, 0.3);
+	color: #ffffff;
+}
