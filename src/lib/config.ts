@@ -1,6 +1,6 @@
 export const siteConfig = {
 	title: 'hacker1db newsletter',
-	description: 'Security posts, dev notes, hacker stuff — delivered to your inbox.',
+	description: 'Security posts, dev notes, hacker stuff delivered to your inbox.',
 	author: 'hacker1db',
 	social: {
 		github: 'https://github.com/hacker1db',
