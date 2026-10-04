@@ -18,21 +18,26 @@ function getSiteUrl(): string {
 	return publicEnv.PUBLIC_SITE_URL || 'https://newsletter.hacker1db.dev';
 }
 
-export async function sendWelcomeEmail(email: string, token: string): Promise<void> {
+export async function sendWelcomeEmail(
+	email: string,
+	confirmationToken: string,
+	unsubscribeToken: string
+): Promise<void> {
 	const siteUrl = getSiteUrl();
-	const confirmUrl = `${siteUrl}/api/confirm/?token=${token}`;
-	const unsubscribeUrl = `${siteUrl}/api/unsubscribe/?token=${token}`;
+	const confirmUrl = `${siteUrl}/api/confirm/?token=${encodeURIComponent(confirmationToken)}`;
+	const unsubscribeUrl = `${siteUrl}/api/unsubscribe/?token=${encodeURIComponent(unsubscribeToken)}`;
 
-	await getResend().emails.send({
+	const { data, error } = await getResend().emails.send({
 		from: 'hacker1db newsletter <newsletter@hacker1db.dev>',
 		to: email,
 		subject: 'Confirm your subscription to hacker1db',
 		html: welcomeEmailHtml(confirmUrl, unsubscribeUrl)
 	});
+	if (error || !data?.id) throw new Error('Welcome email was not accepted by Resend');
 }
 
 export async function sendNewsletterEmail(
-	subscribers: { email: string; token: string }[],
+	subscribers: { email: string; unsubscribeToken: string }[],
 	subject: string,
 	html: string
 ): Promise<{ sent: number; failed: number }> {
@@ -47,16 +52,21 @@ export async function sendNewsletterEmail(
 
 		for (const subscriber of chunk) {
 			try {
-				const unsubscribeUrl = `${siteUrl}/api/unsubscribe/?token=${subscriber.token}`;
-				await getResend().emails.send({
+				const unsubscribeUrl = `${siteUrl}/api/unsubscribe/?token=${encodeURIComponent(subscriber.unsubscribeToken)}`;
+				const { data, error } = await getResend().emails.send({
 					from: 'hacker1db newsletter <newsletter@hacker1db.dev>',
 					to: subscriber.email,
 					subject,
-					html: newsletterEmailHtml(html, unsubscribeUrl)
+					html: newsletterEmailHtml(html, unsubscribeUrl),
+					headers: {
+						'List-Unsubscribe': `<${unsubscribeUrl}>`,
+						'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+					}
 				});
+				if (error || !data?.id) throw new Error('Newsletter email was not accepted by Resend');
 				sent++;
-			} catch (err) {
-				console.error(`Failed to send to ${subscriber.email}:`, err);
+			} catch {
+				console.error('Newsletter email was not accepted by Resend');
 				failed++;
 			}
 		}

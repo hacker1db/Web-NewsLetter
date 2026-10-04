@@ -22,19 +22,18 @@ export const POST: RequestHandler = async ({ request }) => {
 	email = email.toLowerCase().trim();
 
 	try {
-		const { addSubscriber } = await import('$lib/server/db');
+		const { addSubscriber, finalizeSubscription } = await import('$lib/server/db');
 		const { sendWelcomeEmail } = await import('$lib/server/resend');
 
-		const token = crypto.randomUUID();
-		await addSubscriber(email, token);
-		await sendWelcomeEmail(email, token);
+		const tokens = await addSubscriber(email);
+		if (!tokens) return json({ error: 'This email is already subscribed.' }, { status: 409 });
+		await sendWelcomeEmail(email, tokens.confirmationToken, tokens.unsubscribeToken);
+		if (!await finalizeSubscription(tokens)) {
+			return json({ error: 'Subscription changed. Please try again.' }, { status: 409 });
+		}
 
 		return json({ success: true });
 	} catch (err) {
-		// Check for UNIQUE constraint violation
-		if (err instanceof Error && err.message.includes('UNIQUE')) {
-			return json({ error: 'This email is already subscribed.' }, { status: 409 });
-		}
 		console.error('Subscribe error:', err);
 		return json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
 	}

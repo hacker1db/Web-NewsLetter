@@ -1,15 +1,23 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { isAdmin } from '$lib/server/auth';
 
-export const POST: RequestHandler = async ({ request, locals }) => {
-	const userId = (locals as Record<string, unknown>).userId as string | null ?? null;
-	if (!userId) {
+export const POST: RequestHandler = async ({ request, locals, url }) => {
+	if (!isAdmin(locals.userId)) {
 		return new Response('Unauthorized', { status: 401 });
 	}
 
-	const { subject, htmlBody } = await request.json();
-
-	if (!subject || !htmlBody) {
+	if (request.headers.has('origin') && request.headers.get('origin') !== url.origin) {
+		return json({ error: 'Forbidden' }, { status: 403 });
+	}
+	let subject: unknown;
+	let htmlBody: unknown;
+	try {
+		({ subject, htmlBody } = await request.json());
+	} catch {
+		return json({ error: 'Invalid request body' }, { status: 400 });
+	}
+	if (typeof subject !== 'string' || typeof htmlBody !== 'string' || !subject.trim() || !htmlBody.trim()) {
 		return json({ error: 'Subject and body are required.' }, { status: 400 });
 	}
 

@@ -1,12 +1,16 @@
 import type { Handle } from '@sveltejs/kit';
-import { sequence } from '@sveltejs/kit/hooks';
+import { verifyAdminSession } from '$lib/server/auth';
 
 const authHandle: Handle = async ({ event, resolve }) => {
-	const userId = event.cookies.get('admin_session');
-	if (userId) {
-		event.locals.userId = userId;
+	delete event.locals.userId;
+	const token = event.cookies.get('admin_session');
+	const admin = await verifyAdminSession(token);
+	if (admin) {
+		event.locals.userId = admin.userId;
+	} else if (token) {
+		event.cookies.delete('admin_session', { path: '/' });
 	}
 	return resolve(event);
 };
 
-export const handle = sequence(authHandle);
+export const handle = authHandle;
