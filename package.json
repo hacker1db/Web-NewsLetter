@@ -2,6 +2,7 @@
   "name": "hacker1db-newsletter",
   "version": "0.0.1",
   "private": true,
+  "packageManager": "pnpm@10.33.2",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
@@ -22,5 +23,12 @@
     "@libsql/client": "^0.14.0",
     "resend": "^4.0.0"
   },
-  "type": "module"
+  "type": "module",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "browser-tabs-lock",
+      "core-js",
+      "esbuild"
+    ]
+  }
 }
