@@ -34,6 +34,20 @@ the production Clerk instance. Follow `.env.example` for optional verification
 settings. Redeploy after changing environment variables; the Clerk client key
 is embedded during the build.
 
+### Upload From Your Terminal
+
+Run `bash scripts/setup-vercel-env.sh` from this worktree. It prompts locally
+for credentials and uploads supplied values to the `web-newsletter` project's
+Production environment. Secret input is hidden and sent to the CLI through
+standard input, without writing a credentials file.
+
+Press Enter to leave an existing value unchanged, including `DATABASE_URL`
+provided by the Neon integration. At the subscriber secret prompt, enter
+`GENERATE` only for initial setup; an existing subscriber secret must remain
+stable for email links to keep working. The script also sets both public URLs
+and the production Clerk origin. It does not create a Neon database, run a
+migration, or redeploy the application.
+
 ## Service Setup
 
 1. Add a dedicated Neon Postgres integration to this Vercel project (do not share Plan Manager's database) and verify it provides `DATABASE_URL`.
