@@ -335,7 +335,7 @@ Implement Option A first (trivial addition to main blog repo).
 
 ## Verification Steps
 
-1. `bun run dev` → site at localhost:5173, correct colors (#1a1d21 bg, #6FC1FF accent), Inter font, blinking cursor
+1. `pnpm run dev` → site at localhost:5173, correct colors (#1a1d21 bg, #6FC1FF accent), Inter font, blinking cursor
 2. Submit valid email → `/success` page, welcome email with confirm link received
 3. Click confirm link → `confirmed=1` in Turso, redirected to homepage with confirmation message
 4. Submit same email again → graceful "Already subscribed" error, no DB insert

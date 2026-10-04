@@ -20,7 +20,7 @@
 
 		<!-- Tagline -->
 		<p style="color: #d1d5db; font-size: 1.125rem; line-height: 1.6; margin-bottom: 2rem;">
-			Security posts, dev notes, hacker stuff — delivered to your inbox.
+			Security posts, dev notes, hacker stuff delivered to your inbox.
 		</p>
 
 		<!-- Subscriber count badge -->

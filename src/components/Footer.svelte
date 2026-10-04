@@ -44,7 +44,7 @@
 					</h3>
 				</div>
 				<p style="color: #9ca3af; font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.5rem; max-width: 300px;">
-					Security posts, dev notes, hacker stuff — delivered to your inbox.
+					Security posts, dev notes, hacker stuff delivered to your inbox.
 				</p>
 			</div>
 

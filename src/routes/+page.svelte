@@ -9,7 +9,7 @@
 
 <svelte:head>
 	<title>hacker1db newsletter</title>
-	<meta name="description" content="Security posts, dev notes, hacker stuff — delivered to your inbox." />
+	<meta name="description" content="Security posts, dev notes, hacker stuff delivered to your inbox." />
 </svelte:head>
 
 <Hero subscriberCount={data.subscriberCount}>

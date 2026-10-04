@@ -83,7 +83,7 @@
 </script>
 
 <svelte:head>
-	<title>Login — hacker1db newsletter</title>
+	<title>Login | hacker1db newsletter</title>
 </svelte:head>
 
 <section style="display: flex; justify-content: center; align-items: center; min-height: 60vh; padding: 2rem 1rem;">
