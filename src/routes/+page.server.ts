@@ -1,18 +1,8 @@
 import type { PageServerLoad } from './$types';
+import { getRecentPosts } from '$lib/server/blogPosts';
 
 export const load: PageServerLoad = async () => {
-	let posts: Array<{ title: string; slug: string; date: string; tags?: string[] }> = [];
-	try {
-		const res = await fetch('https://hacker1db.dev/api/posts.json', {
-			signal: AbortSignal.timeout(3000)
-		});
-		if (res.ok) {
-			const data = await res.json();
-			posts = data.slice(0, 3);
-		}
-	} catch {
-		// fallback: posts stays empty
-	}
+	const posts = (await getRecentPosts(3)).map(({ title, url, date, tags }) => ({ title, url, date, tags }));
 
 	let subscriberCount = 0;
 	try {

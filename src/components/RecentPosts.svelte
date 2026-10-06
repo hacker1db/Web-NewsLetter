@@ -1,5 +1,5 @@
 <script lang="ts">
-	let { posts = [] }: { posts: Array<{ title: string; slug: string; date: string; tags?: string[] }> } = $props();
+	let { posts = [] }: { posts: Array<{ title: string; url: string; date: string; tags?: string[] }> } = $props();
 </script>
 
 <section style="padding: 3rem 0;">
@@ -16,7 +16,7 @@
 					class="post-card"
 					style="background-color: #1f2937; border-radius: 0.75rem; padding: 1.5rem; border: 1px solid #374151; transition: all 0.2s ease;"
 				>
-					<a href="https://hacker1db.dev/posts/{post.slug}/" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+					<a href={post.url} target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
 						<h3 style="font-size: 1.125rem; font-weight: 700; color: #ffffff; margin-bottom: 0.5rem; line-height: 1.3; transition: color 0.2s ease;">
 							{post.title}
 						</h3>

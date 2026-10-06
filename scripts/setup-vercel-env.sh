@@ -63,7 +63,7 @@ trap 'exit 129' HUP
 tty_state=$(stty -g <&9) || fail 'Unable to read terminal settings.'
 stty -echo <&9 || fail 'Unable to disable terminal echo.'
 
-names=(DATABASE_URL RESEND_API_KEY CLERK_SECRET_KEY VITE_CLERK_PUBLISHABLE_KEY ADMIN_USER_IDS SUBSCRIBER_TOKEN_SECRET)
+names=(DATABASE_URL RESEND_API_KEY CLERK_SECRET_KEY VITE_CLERK_PUBLISHABLE_KEY ADMIN_USER_IDS SUBSCRIBER_TOKEN_SECRET NEWSLETTER_POSTS_API_TOKEN)
 
 validate() {
   # Only the field name is argv; the candidate arrives through stdin.
@@ -84,7 +84,8 @@ validate() {
       case "CLERK_SECRET_KEY": valid = /^sk_(live|test)_[A-Za-z0-9_-]{10,}$/.test(value); break;
       case "VITE_CLERK_PUBLISHABLE_KEY": valid = /^pk_(live|test)_[A-Za-z0-9+/=_-]{10,}$/.test(value); break;
       case "ADMIN_USER_IDS": valid = /^user_[A-Za-z0-9]+(\s*,\s*user_[A-Za-z0-9]+)*$/.test(value); break;
-      case "SUBSCRIBER_TOKEN_SECRET": valid = value.length >= 32 && !/\s/.test(value); break;
+      case "SUBSCRIBER_TOKEN_SECRET":
+      case "NEWSLETTER_POSTS_API_TOKEN": valid = value.length >= 32 && !/\s/.test(value); break;
     }
     process.exit(valid ? 0 : 1);
   ' "$1" >/dev/null 2>&1
@@ -95,7 +96,8 @@ printf '%s\n' \
   'Enter keeps the existing value (or leaves a missing value unset).' \
   'DATABASE_URL: Enter keeps the Neon integration value.' \
   'SUBSCRIBER_TOKEN_SECRET: Enter keeps existing; GENERATE explicitly creates a new secret.' \
-  'Replacing that secret invalidates existing subscriber tokens. Use GENERATE only intentionally.' >&9
+  'Replacing that secret invalidates existing subscriber tokens. Use GENERATE only intentionally.' \
+  'NEWSLETTER_POSTS_API_TOKEN: paste the exact value configured in the blog project.' >&9
 
 for name in "${names[@]}"; do
   while :; do
@@ -118,7 +120,7 @@ for name in "${names[@]}"; do
       unset setup_reply
       break
     fi
-    printf '%s\n' 'Invalid shape; retry. URLs need PostgreSQL credentials and a database; keys need provider prefixes; IDs need comma-separated user_ IDs; subscriber secrets need 32+ non-whitespace characters.' >&9
+    printf '%s\n' 'Invalid shape; retry. URLs need PostgreSQL credentials and a database; keys need provider prefixes; IDs need comma-separated user_ IDs; subscriber secrets and tokens need 32+ non-whitespace characters.' >&9
   done
 done
 

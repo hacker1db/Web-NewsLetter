@@ -22,6 +22,7 @@ Configure these in Vercel before deploying. Keep secret values out of Git.
 | `DATABASE_URL` | Neon Postgres connection string injected by the Vercel integration |
 | `SUBSCRIBER_TOKEN_SECRET` | A stable, high-entropy secret for signing unsubscribe URLs |
 | `RESEND_API_KEY` | Email delivery API key |
+| `NEWSLETTER_POSTS_API_TOKEN` | Server-only bearer token for the blog's `/api/newsletter/posts` feed; must match the blog project. Optional: recent posts are hidden when unset |
 | `CLERK_SECRET_KEY` | Clerk server verification key |
 | `VITE_CLERK_PUBLISHABLE_KEY` | Matching Clerk client key; required at build time |
 | `ADMIN_USER_IDS` | Comma-separated Clerk user IDs allowed to administer the newsletter |
@@ -57,6 +58,17 @@ migration, or redeploy the application.
 5. Configure a production Clerk instance and its allowed domain. Use matching production keys and configure any enabled social sign-in providers.
 6. Add the canonical domain to the Vercel project and apply the DNS records Vercel provides. Set `PUBLIC_SITE_URL` to that domain once it resolves.
 7. Use separate database/email/auth configuration for previews if preview deployments need working integrations.
+
+## Blog Post Feed
+
+The homepage's recent posts come from the blog's `GET /api/newsletter/posts?limit=3`,
+called server-side with `Authorization: Bearer $NEWSLETTER_POSTS_API_TOKEN`. Any
+failure hides the section; it never blocks the page.
+
+To create or rotate the token, generate one value (`openssl rand -hex 32`), set it as
+a sensitive Production variable in both the blog project and this project, then
+redeploy both. Between the two redeploys the recent-posts section is hidden. If the
+token is exposed, rotate immediately.
 
 ## Newsletter Domain
 
