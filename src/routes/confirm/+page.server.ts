@@ -11,7 +11,7 @@ export const load: PageServerLoad = async ({ url }) => {
 		const { confirmSubscriber } = await import('$lib/server/db');
 		const confirmed = await confirmSubscriber(token);
 		if (confirmed) {
-			throw redirect(302, '/?confirmed=true');
+			throw redirect(302, '/success/?confirmed=true');
 		}
 	} catch (err) {
 		// Re-throw redirects

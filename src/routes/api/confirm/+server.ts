@@ -12,7 +12,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		const { confirmSubscriber } = await import('$lib/server/db');
 		const confirmed = await confirmSubscriber(token);
 		if (confirmed) {
-			throw redirect(302, '/?confirmed=true');
+			throw redirect(302, '/success/?confirmed=true');
 		}
 	} catch (err) {
 		if (err && typeof err === 'object' && 'status' in err) throw err;
