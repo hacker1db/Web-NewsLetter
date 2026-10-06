@@ -1,33 +1,41 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
 
 	let email = $state('');
 	let loading = $state(false);
 	let error = $state('');
-	let success = $state(false);
+
+	async function subscribe(event: SubmitEvent) {
+		event.preventDefault();
+		loading = true;
+		error = '';
+
+		try {
+			const form = event.currentTarget as HTMLFormElement;
+			const response = await fetch('/api/subscribe', {
+				method: 'POST',
+				body: new FormData(form)
+			});
+			const result = (await response.json()) as { error?: string };
+
+			if (!response.ok) {
+				error = result.error ?? 'Something went wrong. Please try again.';
+				return;
+			}
+
+			await goto('/success/');
+		} catch {
+			error = 'Something went wrong. Please try again.';
+		} finally {
+			loading = false;
+		}
+	}
 </script>
 
 <form
 	method="POST"
-	action="/api/subscribe/"
-	use:enhance={() => {
-		loading = true;
-		error = '';
-		return async ({ result }) => {
-			loading = false;
-			if (result.type === 'redirect') {
-				goto('/success/');
-			} else if (result.type === 'success') {
-				success = true;
-				goto('/success/');
-			} else if (result.type === 'failure') {
-				error = (result.data as { error?: string })?.error ?? 'Something went wrong. Please try again.';
-			} else {
-				error = 'Something went wrong. Please try again.';
-			}
-		};
-	}}
+	action="/api/subscribe"
+	onsubmit={subscribe}
 	style="display: flex; gap: 0.75rem; max-width: 440px; margin: 0 auto;"
 >
 	<input
@@ -59,11 +67,5 @@
 {#if error}
 	<p style="color: #f87171; font-size: 0.875rem; text-align: center; margin-top: 0.75rem;">
 		{error}
-	</p>
-{/if}
-
-{#if success}
-	<p style="color: #34d399; font-size: 0.875rem; text-align: center; margin-top: 0.75rem;">
-		Check your inbox to confirm!
 	</p>
 {/if}
