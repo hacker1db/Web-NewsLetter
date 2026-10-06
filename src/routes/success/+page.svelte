@@ -16,7 +16,7 @@
 				Check your inbox and click the confirmation link.
 			</p>
 			<p style="color: #9ca3af; font-size: 0.875rem; line-height: 1.5;">
-				If you don't see the email, check your spam folder. The email comes from <span style="color: #6FC1FF;">newsletter@hacker1db.dev</span>.
+				If you don't see the email, check your spam folder. The email comes from <span style="color: #6FC1FF;">newsletter@newsletter.hacker1db.dev</span>.
 			</p>
 		</div>
 

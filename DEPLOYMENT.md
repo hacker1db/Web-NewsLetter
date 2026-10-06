@@ -53,7 +53,7 @@ migration, or redeploy the application.
 1. Add a dedicated Neon Postgres integration to this Vercel project (do not share Plan Manager's database) and verify it provides `DATABASE_URL`.
 2. Generate and add `SUBSCRIBER_TOKEN_SECRET` (for example, `openssl rand -base64 48`). Keep this value stable after launch so historical unsubscribe links remain valid.
 3. With the production `DATABASE_URL` available locally or in a secure CI job, run `pnpm db:migrate`. The migration is idempotent and is intentionally not run during deployment.
-4. Verify `hacker1db.dev` in Resend. The application sends from `newsletter@hacker1db.dev`.
+4. Verify `newsletter.hacker1db.dev` in Resend. The application sends from `newsletter@newsletter.hacker1db.dev`.
 5. Configure a production Clerk instance and its allowed domain. Use matching production keys and configure any enabled social sign-in providers.
 6. Add the canonical domain to the Vercel project and apply the DNS records Vercel provides. Set `PUBLIC_SITE_URL` to that domain once it resolves.
 7. Use separate database/email/auth configuration for previews if preview deployments need working integrations.

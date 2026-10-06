@@ -4,6 +4,7 @@ import { env as publicEnv } from '$env/dynamic/public';
 import { welcomeEmailHtml } from '$lib/emails/welcome';
 
 let _resend: Resend | null = null;
+const sender = 'hacker1db newsletter <newsletter@newsletter.hacker1db.dev>';
 
 function getResend(): Resend {
 	if (!_resend) {
@@ -28,7 +29,7 @@ export async function sendWelcomeEmail(
 	const unsubscribeUrl = `${siteUrl}/api/unsubscribe/?token=${encodeURIComponent(unsubscribeToken)}`;
 
 	const { data, error } = await getResend().emails.send({
-		from: 'hacker1db newsletter <newsletter@hacker1db.dev>',
+		from: sender,
 		to: email,
 		subject: 'Confirm your subscription to hacker1db',
 		html: welcomeEmailHtml(confirmUrl, unsubscribeUrl)
@@ -58,7 +59,7 @@ export async function sendNewsletterEmail(
 			try {
 				const unsubscribeUrl = `${siteUrl}/api/unsubscribe/?token=${encodeURIComponent(subscriber.unsubscribeToken)}`;
 				const { data, error } = await getResend().emails.send({
-					from: 'hacker1db newsletter <newsletter@hacker1db.dev>',
+					from: sender,
 					to: subscriber.email,
 					subject,
 					html: newsletterEmailHtml(html, unsubscribeUrl),
