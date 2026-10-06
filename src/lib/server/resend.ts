@@ -33,7 +33,11 @@ export async function sendWelcomeEmail(
 		subject: 'Confirm your subscription to hacker1db',
 		html: welcomeEmailHtml(confirmUrl, unsubscribeUrl)
 	});
-	if (error || !data?.id) throw new Error('Welcome email was not accepted by Resend');
+	if (error) {
+		console.error('Resend rejected the welcome email:', error);
+		throw new Error('Welcome email was not accepted by Resend');
+	}
+	if (!data?.id) throw new Error('Welcome email was not accepted by Resend');
 }
 
 export async function sendNewsletterEmail(
