@@ -10,6 +10,7 @@ dist/
 .env
 .env.local
 .env.*.local
+.temp.values.txt
 
 # Vercel
 .vercel/
@@ -21,3 +22,8 @@ dist/
 *.log
 .vercel
 .env*
+
+# Local agent state
+.omc/
+.agents/
+.claude/settings.local.json
