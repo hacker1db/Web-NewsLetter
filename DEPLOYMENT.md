@@ -22,6 +22,7 @@ Configure these in Vercel before deploying. Keep secret values out of Git.
 | `DATABASE_URL` | Neon Postgres connection string injected by the Vercel integration |
 | `SUBSCRIBER_TOKEN_SECRET` | A stable, high-entropy secret for signing unsubscribe URLs |
 | `RESEND_API_KEY` | Email delivery API key |
+| `CLERK_MACHINE_SECRET_KEY` | Secret key of the Clerk `newsletter` machine; mints M2M JWTs for the blog's `/api/newsletter/posts` feed. Optional: recent posts are hidden when unset |
 | `CLERK_SECRET_KEY` | Clerk server verification key |
 | `VITE_CLERK_PUBLISHABLE_KEY` | Matching Clerk client key; required at build time |
 | `ADMIN_USER_IDS` | Comma-separated Clerk user IDs allowed to administer the newsletter |
@@ -57,6 +58,18 @@ migration, or redeploy the application.
 5. Configure a production Clerk instance and its allowed domain. Use matching production keys and configure any enabled social sign-in providers.
 6. Add the canonical domain to the Vercel project and apply the DNS records Vercel provides. Set `PUBLIC_SITE_URL` to that domain once it resolves.
 7. Use separate database/email/auth configuration for previews if preview deployments need working integrations.
+
+## Blog Post Feed
+
+The homepage's recent posts come from the blog's `GET /api/newsletter/posts?limit=3`,
+called server-side with `Authorization: Bearer <M2M JWT>`. The JWT is minted from
+`CLERK_MACHINE_SECRET_KEY` (1 hour lifetime, cached and re-minted shortly before
+expiry). Any failure hides the section; it never blocks the page.
+
+The blog verifies the JWT, requires its subject to be the `newsletter` machine, and
+requires a scope to the `blog` machine. To rotate, rotate the `newsletter` machine
+secret key in the Clerk dashboard, update `CLERK_MACHINE_SECRET_KEY` here, and
+redeploy. If the key is exposed, rotate immediately.
 
 ## Newsletter Domain
 
