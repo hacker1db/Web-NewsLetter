@@ -20,7 +20,7 @@
     "tailwindcss": "^4.1.8",
     "typescript": "^5.0.0",
     "vite": "^6.3.5",
-    "vitest": "^3.2.7"
+    "vitest": "^4.1.11"
   },
   "dependencies": {
     "@clerk/backend": "^3.22.0",
