@@ -64,6 +64,8 @@ jobs:
         env:
           DEFAULT_BRANCH: main
           MULTI_STATUS: false
+          # Summary formatting loads the app Prettier plugin, absent in this container.
+          ENABLE_GITHUB_ACTIONS_STEP_SUMMARY: false
           ENABLE_GITHUB_PULL_REQUEST_SUMMARY_COMMENT: false
           VALIDATE_ALL_CODEBASE: true
           VALIDATE_GITHUB_ACTIONS: true
