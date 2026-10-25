@@ -60,9 +60,11 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
-      - uses: super-linter/super-linter@2da136927bd4a73596db63044b504547c62cb854 # v9.0.0
+      - uses: super-linter/super-linter/slim@2da136927bd4a73596db63044b504547c62cb854 # v9.0.0
         env:
           DEFAULT_BRANCH: main
+          MULTI_STATUS: false
+          ENABLE_GITHUB_PULL_REQUEST_SUMMARY_COMMENT: false
           VALIDATE_ALL_CODEBASE: true
           VALIDATE_GITHUB_ACTIONS: true
           VALIDATE_YAML: true
@@ -73,7 +75,8 @@ jobs:
           FILTER_REGEX_EXCLUDE: '(pnpm-lock.yaml|node_modules/|.svelte-kit/|.vercel/|test-results/|playwright-report/)'
   e2e:
     name: e2e
-    runs-on: ubuntu-latest
+    # Ubuntu 24.04 restricts the user namespaces required by Chromium sandboxing.
+    runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
