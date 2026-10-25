@@ -1,6 +1,5 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { chromium } from '@playwright/test';
 import { spawn, execFileSync } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -25,19 +24,8 @@ const preview = spawn(
 );
 const client = new Client({ name: 'newsletter-mcp-verification', version: '1.0.0' });
 const transport = new StdioClientTransport({
-	command: 'pnpm',
-	args: [
-		'exec',
-		'playwright-mcp',
-		'--headless',
-		'--isolated',
-		'--browser',
-		'chrome',
-		'--executable-path',
-		chromium.executablePath(),
-		'--output-dir',
-		output
-	],
+	command: process.execPath,
+	args: ['scripts/playwright-mcp.mjs'],
 	stderr: 'inherit'
 });
 const evidence = [];

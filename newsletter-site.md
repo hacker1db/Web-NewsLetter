@@ -68,7 +68,7 @@ Build a standalone, visually stunning newsletter site at `newsletter.hacker1db.d
 
 ## Page Layout
 
-```
+```text
 newsletter.hacker1db.dev
 ┌─────────────────────────────────────────────┐
 │  HERO                                       │
@@ -99,7 +99,7 @@ newsletter.hacker1db.dev
 
 ## Repository Structure
 
-```
+```text
 hacker1db-newsletter/              ← new standalone repo
 ├── src/
 │   ├── routes/

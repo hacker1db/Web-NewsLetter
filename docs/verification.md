@@ -23,12 +23,12 @@ After installing dependencies and Chromium, configure your MCP client with the r
 
 ```json
 {
-	"command": "pnpm",
-	"args": ["mcp:playwright"]
+	"command": "node",
+	"args": ["scripts/playwright-mcp.mjs"]
 }
 ```
 
-Client-specific configuration is not installed automatically by this file. Reload the client, confirm tool discovery, then use `browser_navigate`, `browser_snapshot`, and `browser_take_screenshot`. Screenshots are saved under `test-results/mcp`. The server uses an isolated headless profile and lockfile-matched Chromium. Start the app separately with `pnpm dev --host 127.0.0.1` for interactive agent work. Never connect test automation to a personal browser session or production admin account.
+Codex can load the checked-in `.codex/config.toml` in a trusted project; other compatible clients can use `.mcp.json`. Global settings are not modified. See the [official MCP configuration documentation](https://developers.openai.com/codex/mcp). Reload the client, confirm tool discovery, then use `browser_navigate`, `browser_snapshot`, and `browser_take_screenshot`. Screenshots are saved under `test-results/mcp`. The server uses an isolated headless profile and lockfile-matched Chromium. Start the app separately with `pnpm dev --host 127.0.0.1` for interactive agent work. Never connect test automation to a personal browser session or production admin account.
 
 ## PR evidence
 
