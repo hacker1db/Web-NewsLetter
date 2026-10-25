@@ -32,7 +32,8 @@
 
 <section style="padding: 2rem 0;">
 	<div style="display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center;">
-		{#each links as link}
+		{#each links as link (link.name)}
+			<!-- eslint-disable svelte/no-navigation-without-resolve -- Static external social URLs, not app routes. -->
 			<a
 				href={link.url}
 				target="_blank"
@@ -41,19 +42,26 @@
 				class="social-pill"
 				style="display: inline-flex; align-items: center; gap: 0.5rem; background-color: #1f2937; border: 1px solid #374151; border-radius: 0.5rem; padding: 0.625rem 1rem; color: #d1d5db; text-decoration: none; font-size: 0.875rem; font-weight: 500; transition: all 0.2s ease;"
 			>
-				<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+				<svg
+					width="18"
+					height="18"
+					viewBox="0 0 24 24"
+					fill="currentColor"
+					xmlns="http://www.w3.org/2000/svg"
+				>
 					<path d={link.path} />
 				</svg>
 				{link.name}
 			</a>
+			<!-- eslint-enable svelte/no-navigation-without-resolve -->
 		{/each}
 	</div>
 </section>
 
 <style>
 	.social-pill:hover {
-		border-color: #6FC1FF !important;
-		color: #6FC1FF !important;
+		border-color: #6fc1ff !important;
+		color: #6fc1ff !important;
 		box-shadow: 0 0 12px rgba(111, 193, 255, 0.15);
 	}
 </style>

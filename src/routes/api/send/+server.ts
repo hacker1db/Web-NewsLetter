@@ -17,7 +17,12 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 	} catch {
 		return json({ error: 'Invalid request body' }, { status: 400 });
 	}
-	if (typeof subject !== 'string' || typeof htmlBody !== 'string' || !subject.trim() || !htmlBody.trim()) {
+	if (
+		typeof subject !== 'string' ||
+		typeof htmlBody !== 'string' ||
+		!subject.trim() ||
+		!htmlBody.trim()
+	) {
 		return json({ error: 'Subject and body are required.' }, { status: 400 });
 	}
 

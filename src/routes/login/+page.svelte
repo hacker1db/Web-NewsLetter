@@ -1,15 +1,8 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { Clerk } from '@clerk/clerk-js';
-
-	// Extend Window to declare the internal Clerk UI constructor
-	// This is an undocumented Clerk internal — typed as unknown intentionally
-	declare global {
-		interface Window {
-			__internal_ClerkUICtor?: unknown;
-		}
-	}
 
 	type ClerkInstance = InstanceType<typeof Clerk>;
 
@@ -75,7 +68,7 @@
 		});
 
 		if (res.ok) {
-			goto('/admin/');
+			goto(resolve('/admin/'));
 		} else {
 			error = 'Authentication failed. Please try again.';
 		}
@@ -86,21 +79,29 @@
 	<title>Login | hacker1db newsletter</title>
 </svelte:head>
 
-<section style="display: flex; justify-content: center; align-items: center; min-height: 60vh; padding: 2rem 1rem;">
+<section
+	style="display: flex; justify-content: center; align-items: center; min-height: 60vh; padding: 2rem 1rem;"
+>
 	<div style="max-width: 420px; width: 100%;">
-		<div style="font-family: 'JetBrains Mono', 'Fira Code', Monaco, monospace; font-size: 1rem; color: #6FC1FF; margin-bottom: 2rem; text-align: center;">
+		<div
+			style="font-family: 'JetBrains Mono', 'Fira Code', Monaco, monospace; font-size: 1rem; color: #6FC1FF; margin-bottom: 2rem; text-align: center;"
+		>
 			<span style="color: #9ca3af;">$</span> sudo login --discord
 		</div>
 
 		{#if loading}
 			<div style="text-align: center; color: #9ca3af; font-size: 0.875rem;">
-				<span style="display: inline-block; animation: blink 1s step-end infinite; color: #6FC1FF;">▋</span>
+				<span style="display: inline-block; animation: blink 1s step-end infinite; color: #6FC1FF;"
+					>▋</span
+				>
 				Loading authentication...
 			</div>
 		{/if}
 
 		{#if error}
-			<div style="background-color: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); border-radius: 0.5rem; padding: 1rem; color: #f87171; font-size: 0.875rem; margin-bottom: 1rem;">
+			<div
+				style="background-color: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); border-radius: 0.5rem; padding: 1rem; color: #f87171; font-size: 0.875rem; margin-bottom: 1rem;"
+			>
 				{error}
 			</div>
 		{/if}
@@ -110,7 +111,7 @@
 
 		<div style="margin-top: 1.5rem; text-align: center;">
 			<a
-				href="/"
+				href={resolve('/')}
 				style="color: #6FC1FF; text-decoration: none; font-size: 0.875rem; opacity: 0.7; transition: opacity 0.2s;"
 				onmouseenter={(e) => ((e.currentTarget as HTMLAnchorElement).style.opacity = '1')}
 				onmouseleave={(e) => ((e.currentTarget as HTMLAnchorElement).style.opacity = '0.7')}

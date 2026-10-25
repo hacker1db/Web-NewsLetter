@@ -21,7 +21,12 @@ export const actions: Actions = {
 		const subject = formData.get('subject') as string;
 		const htmlBody = formData.get('htmlBody') as string;
 
-		if (typeof subject !== 'string' || typeof htmlBody !== 'string' || !subject.trim() || !htmlBody.trim()) {
+		if (
+			typeof subject !== 'string' ||
+			typeof htmlBody !== 'string' ||
+			!subject.trim() ||
+			!htmlBody.trim()
+		) {
 			return fail(400, { error: 'Subject and body are required.' });
 		}
 

@@ -24,7 +24,7 @@ export const GET: RequestHandler = async ({ url }) => {
 <body style="margin: 0; padding: 0; background-color: #1a1d21; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh;">
 <div style="text-align: center; padding: 2rem;">
 <p style="font-family: Monaco, Menlo, 'Courier New', monospace; font-size: 1.25rem; color: #6FC1FF; margin-bottom: 1rem;">
-${unsubscribed ? '&#10003; You\'ve been unsubscribed.' : 'Invalid or expired link.'}
+${unsubscribed ? "&#10003; You've been unsubscribed." : 'Invalid or expired link.'}
 </p>
 <p style="color: #9ca3af; font-size: 0.875rem; margin-bottom: 2rem;">
 ${unsubscribed ? 'Sorry to see you go. You can always resubscribe.' : 'This unsubscribe link is invalid or expired.'}

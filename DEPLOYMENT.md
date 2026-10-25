@@ -17,17 +17,17 @@ Import the Git repository into Vercel to enable deployment after merges to `main
 
 Configure these in Vercel before deploying. Keep secret values out of Git.
 
-| Variable | Purpose |
-| --- | --- |
-| `DATABASE_URL` | Neon Postgres connection string injected by the Vercel integration |
-| `SUBSCRIBER_TOKEN_SECRET` | A stable, high-entropy secret for signing unsubscribe URLs |
-| `RESEND_API_KEY` | Email delivery API key |
-| `CLERK_SECRET_KEY` | Clerk server verification key |
-| `VITE_CLERK_PUBLISHABLE_KEY` | Matching Clerk client key; required at build time |
-| `ADMIN_USER_IDS` | Comma-separated Clerk user IDs allowed to administer the newsletter |
-| `CLERK_AUTHORIZED_PARTIES` | `https://newsletter.hacker1db.dev` |
-| `PUBLIC_SITE_URL` | Canonical site origin: `https://newsletter.hacker1db.dev` |
-| `PUBLIC_BLOG_URL` | Blog origin, `https://hacker1db.dev` |
+| Variable                     | Purpose                                                             |
+| ---------------------------- | ------------------------------------------------------------------- |
+| `DATABASE_URL`               | Neon Postgres connection string injected by the Vercel integration  |
+| `SUBSCRIBER_TOKEN_SECRET`    | A stable, high-entropy secret for signing unsubscribe URLs          |
+| `RESEND_API_KEY`             | Email delivery API key                                              |
+| `CLERK_SECRET_KEY`           | Clerk server verification key                                       |
+| `VITE_CLERK_PUBLISHABLE_KEY` | Matching Clerk client key; required at build time                   |
+| `ADMIN_USER_IDS`             | Comma-separated Clerk user IDs allowed to administer the newsletter |
+| `CLERK_AUTHORIZED_PARTIES`   | `https://newsletter.hacker1db.dev`                                  |
+| `PUBLIC_SITE_URL`            | Canonical site origin: `https://newsletter.hacker1db.dev`           |
+| `PUBLIC_BLOG_URL`            | Blog origin, `https://hacker1db.dev`                                |
 
 Admin access is denied when `ADMIN_USER_IDS` is empty. Obtain your user ID from
 the production Clerk instance. Follow `.env.example` for optional verification

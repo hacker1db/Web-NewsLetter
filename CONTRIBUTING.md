@@ -12,4 +12,4 @@ Pull requests are reserved for trusted repository collaborators with write acces
 4. Fill in the PR template with actual results and limitations. Link the child issue and parent feature. Use a closing keyword only when all child acceptance criteria are complete.
 5. For UI changes, attach Playwright screenshots and assertion/report evidence tied to the tested commit. Label mocked coverage accurately. Agent authors must also follow AGENTS.md.
 
-The canonical implementation plan is [Newsletter modernization, CI and PR evidence](https://planmanager.hacker1db.dev/plans/mUWHBz1OiWnz5GgoAtmT2), tracked by feature #4. Linting, Playwright, MCP onboarding and automated policy enforcement are tracked follow-up work; the initial workflows cover unit tests, builds and CodeQL.
+The canonical implementation plan is [Newsletter modernization, CI and PR evidence](https://planmanager.hacker1db.dev/plans/mUWHBz1OiWnz5GgoAtmT2), tracked by feature #4. CI runs type checking, ESLint, formatting, Super-Linter, unit tests, build, Playwright and MCP verification. CodeQL remains managed by GitHub default setup; do not add an advanced CodeQL workflow while default setup is enabled.

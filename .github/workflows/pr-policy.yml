@@ -1,0 +1,53 @@
+name: PR policy
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+  actions: read
+jobs:
+  policy:
+    name: pr-policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # No checkout or execution of PR code: inspect API metadata only.
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: context.issue.number });
+            const body = pr.body || '';
+            const parent = body.match(/Parent feature:\s*#(\d+)/i)?.[1];
+            const children = [...body.matchAll(/\b(?:Closes|Fixes|Resolves|Refs)\s+#(\d+)/gi)].map(match => Number(match[1]));
+            if (!parent || !children.length) return core.setFailed('Link a parent feature and at least one child using Refs/Closes #number.');
+            const feature = await github.rest.issues.get({ owner, repo, issue_number: Number(parent) });
+            if (feature.data.pull_request) return core.setFailed('Parent must be an issue, not a PR.');
+            for (const issue_number of children) {
+              const { data } = await github.request('GET /repos/{owner}/{repo}/issues/{issue_number}/parent', { owner, repo, issue_number });
+              if (data.number !== Number(parent)) return core.setFailed(`#${issue_number} is not a native sub-issue of #${parent}.`);
+            }
+            const shas = body.match(/\b[0-9a-f]{40}\b/g) || [];
+            if (!shas.includes(pr.head.sha)) return core.setFailed('Refresh verification with the current PR head SHA.');
+            if (!/^## Verification\s*$/m.test(body) || !/^## Remaining work/m.test(body)) return core.setFailed('Include Verification and Remaining work sections.');
+            const urls = body.match(/https:\/\/[^\s)<>]+/g) || [];
+            let evidence = false;
+            for (const raw of urls) {
+              let url;
+              try { url = new URL(raw); } catch { continue; }
+              if (url.origin !== 'https://github.com') continue;
+              const run = url.pathname.match(new RegExp(`^/${owner}/${repo}/actions/runs/([0-9]+)$`));
+              if (run) {
+                const { data } = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: Number(run[1]) });
+                if (data.head_sha === pr.head.sha && data.conclusion === 'success') evidence = true;
+              }
+              if (url.pathname === `/${owner}/${repo}/pull/${pr.number}` && /^#issuecomment-[0-9]+$/.test(url.hash)) {
+                const { data } = await github.rest.issues.getComment({ owner, repo, comment_id: Number(url.hash.replace('#issuecomment-', '')) });
+                if (data.issue_url.endsWith(`/issues/${pr.number}`) && (data.body || '').includes(pr.head.sha) && /https:\/\/github\.com\/user-attachments\/assets\//.test(data.body || '')) evidence = true;
+              }
+            }
+            if (!evidence) return core.setFailed('Link a successful Actions run for this head or a screenshot comment on this PR containing this head SHA.');
+            core.summary.addHeading('PR evidence metadata').addRaw(`Feature #${parent}; child issues ${children.map(n => '#' + n).join(', ')}; head ${pr.head.sha}. Maintainer review must assess whether the linked evidence proves the behavior.`).write();

@@ -4,7 +4,7 @@ import type { RequestHandler } from './$types';
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const POST: RequestHandler = async ({ request }) => {
-	let email: string | null = null;
+	let email: string | null;
 
 	const contentType = request.headers.get('content-type') ?? '';
 	if (contentType.includes('application/json')) {
@@ -28,7 +28,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		const tokens = await addSubscriber(email);
 		if (!tokens) return json({ error: 'This email is already subscribed.' }, { status: 409 });
 		await sendWelcomeEmail(email, tokens.confirmationToken, tokens.unsubscribeToken);
-		if (!await finalizeSubscription(tokens)) {
+		if (!(await finalizeSubscription(tokens))) {
 			return json({ error: 'Subscription changed. Please try again.' }, { status: 409 });
 		}
 

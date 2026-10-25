@@ -7,6 +7,7 @@ cp /path/to/web-hacker1db/main/static/fonts/Inter-*.woff* ./
 ```
 
 Required files:
+
 - Inter-Regular.woff2, Inter-Regular.woff
 - Inter-Italic.woff2, Inter-Italic.woff
 - Inter-Medium.woff2, Inter-Medium.woff

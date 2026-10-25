@@ -13,7 +13,10 @@ const sql = neon(process.env.DATABASE_URL);
 
 // The schema is idempotent, which makes this safe for initial setup and CI.
 // Execute statements separately because the Neon HTTP driver accepts one statement per query.
-for (const statement of migration.split(';').map((value) => value.trim()).filter(Boolean)) {
+for (const statement of migration
+	.split(';')
+	.map((value) => value.trim())
+	.filter(Boolean)) {
 	await sql.query(statement);
 }
 console.log('Newsletter database schema is up to date.');

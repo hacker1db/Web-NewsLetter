@@ -6,10 +6,10 @@ Child issue: Refs #
 
 ## Problem and resulting behavior
 
-## Acceptance evidence
+## Verification
 
 | Acceptance criterion | Command or scenario | Actual result | Report or screenshot link |
-| --- | --- | --- | --- |
+| -------------------- | ------------------- | ------------- | ------------------------- |
 
 Tested commit SHA:
 Actions run URL:

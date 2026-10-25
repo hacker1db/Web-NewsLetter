@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { siteConfig } from '$lib/config';
 
@@ -7,19 +8,17 @@
 	let mobileOpen = $state(false);
 
 	let navLinks = $derived([
-		{ href: '/', label: 'Home' },
-		...(isAdmin ? [{ href: '/admin/', label: 'Admin' }] : [])
+		{ href: '/' as const, label: 'Home' },
+		...(isAdmin ? [{ href: '/admin/' as const, label: 'Admin' }] : [])
 	]);
 </script>
 
-<header
-	style="background-color: #1a1d21; border-bottom: 1px solid #374151; padding: 1rem 0;"
->
+<header style="background-color: #1a1d21; border-bottom: 1px solid #374151; padding: 1rem 0;">
 	<div
 		style="max-width: 1024px; margin: 0 auto; padding: 0 1rem; display: flex; align-items: center; justify-content: space-between;"
 	>
 		<a
-			href="/"
+			href={resolve('/')}
 			style="font-family: Monaco, Menlo, 'Courier New', monospace; font-size: 1.125rem; color: #6FC1FF; text-decoration: none; transition: color 0.2s ease;"
 		>
 			<span>{siteConfig.logo.text}</span>
@@ -28,10 +27,12 @@
 
 		<!-- Desktop nav -->
 		<nav class="desktop-nav" style="display: flex; gap: 1.5rem;">
-			{#each navLinks as link}
+			{#each navLinks as link (link.href)}
 				<a
-					href={link.href}
-					style="color: {page.url.pathname === link.href ? '#6FC1FF' : '#d1d5db'}; text-decoration: none; transition: color 0.2s ease;"
+					href={resolve(link.href)}
+					style="color: {page.url.pathname === link.href
+						? '#6FC1FF'
+						: '#d1d5db'}; text-decoration: none; transition: color 0.2s ease;"
 				>
 					{link.label}
 				</a>
@@ -46,7 +47,16 @@
 			aria-label="Toggle navigation"
 			style="display: none; background: none; border: 1px solid #374151; border-radius: 0.375rem; padding: 0.4rem 0.6rem; cursor: pointer; color: #d1d5db;"
 		>
-			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<svg
+				width="20"
+				height="20"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
 				{#if mobileOpen}
 					<line x1="18" y1="6" x2="6" y2="18"></line>
 					<line x1="6" y1="6" x2="18" y2="18"></line>
@@ -61,12 +71,17 @@
 
 	<!-- Mobile nav -->
 	{#if mobileOpen}
-		<nav class="mobile-nav" style="max-width: 1024px; margin: 0 auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px solid #374151;">
-			{#each navLinks as link}
+		<nav
+			class="mobile-nav"
+			style="max-width: 1024px; margin: 0 auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px solid #374151;"
+		>
+			{#each navLinks as link (link.href)}
 				<a
-					href={link.href}
+					href={resolve(link.href)}
 					onclick={() => (mobileOpen = false)}
-					style="color: {page.url.pathname === link.href ? '#6FC1FF' : '#d1d5db'}; text-decoration: none; padding: 0.5rem 0; transition: color 0.2s ease;"
+					style="color: {page.url.pathname === link.href
+						? '#6FC1FF'
+						: '#d1d5db'}; text-decoration: none; padding: 0.5rem 0; transition: color 0.2s ease;"
 				>
 					{link.label}
 				</a>

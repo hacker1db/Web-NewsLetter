@@ -27,14 +27,14 @@ There is no Turso-data migration in scope. The new database begins empty.
 
 `subscribers` is the system of record. It contains:
 
-| Field | Purpose |
-| --- | --- |
-| `id` | Internal subscriber identifier |
-| `email` | Normalized, unique email address |
-| `status` | `pending`, `active`, or `unsubscribed` |
-| `confirm_token_hash` | Hash of the one-time confirmation token |
-| `unsubscribe_token_hash` | Hash of the unsubscribe token |
-| `created_at`, `confirmed_at`, `unsubscribed_at` | Lifecycle timestamps |
+| Field                                           | Purpose                                 |
+| ----------------------------------------------- | --------------------------------------- |
+| `id`                                            | Internal subscriber identifier          |
+| `email`                                         | Normalized, unique email address        |
+| `status`                                        | `pending`, `active`, or `unsubscribed`  |
+| `confirm_token_hash`                            | Hash of the one-time confirmation token |
+| `unsubscribe_token_hash`                        | Hash of the unsubscribe token           |
+| `created_at`, `confirmed_at`, `unsubscribed_at` | Lifecycle timestamps                    |
 
 The raw tokens are only sent in email links. Database records retain hashes, so
 a database export cannot be used directly to unsubscribe or confirm an address.
