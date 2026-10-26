@@ -26,8 +26,10 @@ export default defineConfig({
 		env: {
 			DATABASE_URL: '',
 			RESEND_API_KEY: '',
-			CLERK_SECRET_KEY: '',
-			VITE_CLERK_PUBLISHABLE_KEY: ''
+			WORKOS_API_KEY: 'sk_test_browser_fixture',
+			WORKOS_CLIENT_ID: 'client_browser_fixture',
+			WORKOS_COOKIE_PASSWORD: 'test-only-browser-cookie-password-32-characters',
+			WORKOS_REDIRECT_URI: 'http://127.0.0.1:4174/auth/callback/'
 		}
 	}
 });

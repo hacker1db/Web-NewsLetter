@@ -44,9 +44,8 @@
 		"vitest": "^3.2.7"
 	},
 	"dependencies": {
-		"@clerk/backend": "^3.22.0",
-		"@clerk/clerk-js": "^6.3.3",
 		"@neondatabase/serverless": "^1.2.0",
+		"@workos/authkit-sveltekit": "^0.3.0",
 		"resend": "^4.0.0"
 	},
 	"type": "module",

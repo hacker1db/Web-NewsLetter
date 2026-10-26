@@ -89,3 +89,27 @@ test('confirmed display is distinct from pending', async ({ page }) => {
 		page.getByText("You're confirmed and will receive future hacker1db newsletter posts.")
 	).toBeVisible();
 });
+
+test('admin login starts hosted WorkOS auth without client-side credentials', async ({ page }) => {
+	await page.goto('/login/');
+	await expect(page.getByRole('heading', { name: 'Newsletter admin' })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Continue to sign in' })).toBeVisible();
+	// Inspect the real form response without following it to the external provider.
+	const response = await page.request.post('/login/', {
+		form: {},
+		headers: { origin: 'http://127.0.0.1:4174', accept: 'text/html' },
+		maxRedirects: 0
+	});
+	expect(response.status()).toBe(303);
+	const url = new URL(response.headers().location);
+	expect(url.origin).toBe('https://api.workos.com');
+	expect(url.pathname).toBe('/user_management/authorize');
+	expect(url.searchParams.get('code_challenge_method')).toBe('S256');
+	expect(url.searchParams.get('redirect_uri')).toBe('http://127.0.0.1:4174/auth/callback/');
+});
+
+test('invalid callback gives a recoverable sign-in error', async ({ page }) => {
+	await page.goto('/auth/callback/');
+	await expect(page.getByRole('heading', { name: 'Sign-in could not be completed' })).toBeVisible();
+	await expect(page.getByRole('link', { name: 'Return to login' })).toBeVisible();
+});

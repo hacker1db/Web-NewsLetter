@@ -17,22 +17,26 @@ Import the Git repository into Vercel to enable deployment after merges to `main
 
 Configure these in Vercel before deploying. Keep secret values out of Git.
 
-| Variable                     | Purpose                                                             |
-| ---------------------------- | ------------------------------------------------------------------- |
-| `DATABASE_URL`               | Neon Postgres connection string injected by the Vercel integration  |
-| `SUBSCRIBER_TOKEN_SECRET`    | A stable, high-entropy secret for signing unsubscribe URLs          |
-| `RESEND_API_KEY`             | Email delivery API key                                              |
-| `CLERK_SECRET_KEY`           | Clerk server verification key                                       |
-| `VITE_CLERK_PUBLISHABLE_KEY` | Matching Clerk client key; required at build time                   |
-| `ADMIN_USER_IDS`             | Comma-separated Clerk user IDs allowed to administer the newsletter |
-| `CLERK_AUTHORIZED_PARTIES`   | `https://newsletter.hacker1db.dev`                                  |
-| `PUBLIC_SITE_URL`            | Canonical site origin: `https://newsletter.hacker1db.dev`           |
-| `PUBLIC_BLOG_URL`            | Blog origin, `https://hacker1db.dev`                                |
+| Variable                  | Purpose                                                              |
+| ------------------------- | -------------------------------------------------------------------- |
+| `DATABASE_URL`            | Neon Postgres connection string injected by the Vercel integration   |
+| `SUBSCRIBER_TOKEN_SECRET` | A stable, high-entropy secret for signing unsubscribe URLs           |
+| `RESEND_API_KEY`          | Email delivery API key                                               |
+| `WORKOS_API_KEY`          | WorkOS server API key                                                |
+| `WORKOS_CLIENT_ID`        | WorkOS application client ID                                         |
+| `WORKOS_COOKIE_PASSWORD`  | Independent random secret, at least 32 characters                    |
+| `WORKOS_REDIRECT_URI`     | `https://newsletter.hacker1db.dev/auth/callback/`                    |
+| `ADMIN_USER_IDS`          | Comma-separated WorkOS user IDs allowed to administer the newsletter |
+| `PUBLIC_SITE_URL`         | Canonical site origin: `https://newsletter.hacker1db.dev`            |
+| `PUBLIC_BLOG_URL`         | Blog origin, `https://hacker1db.dev`                                 |
 
-Admin access is denied when `ADMIN_USER_IDS` is empty. Obtain your user ID from
-the production Clerk instance. Follow `.env.example` for optional verification
-settings. Redeploy after changing environment variables; the Clerk client key
-is embedded during the build.
+Admin access is denied when `ADMIN_USER_IDS` is empty. Replace the old Clerk IDs with IDs from the selected WorkOS environment. All authentication configuration is server-only; redeploy after changes.
+
+Register the exact callback URL above, set the initiate-login URI to `https://newsletter.hacker1db.dev/auth/sign-in/`, and configure the logout redirect to `https://newsletter.hacker1db.dev/login/` in WorkOS. For local development use the equivalent localhost URLs. Keep preview and production credentials separate. Sharing an identity environment with web-hacker1db does not require sharing cookies: keep this app's cookie password independent and cookies host-only.
+
+The official SDK owns PKCE/state, encrypted cookies, JWT validation and token refresh. Cookies last eight hours; the WorkOS session lifetime is configured in its dashboard. Provider revocation is observed on refresh, rather than a remote session lookup on every request. Removing an ID from the allowlist denies admin operations immediately after the environment change is deployed. Logout redirects through WorkOS and clears the local cookie, including if a refresh occurred on the same request.
+
+Clerk cookies are no longer accepted. Existing admins must sign in again through WorkOS. Remove obsolete Clerk environment variables after rollout. Newsletter subscribers are not login accounts and require no migration. Validate sign-in, non-admin rejection, send and logout using a test WorkOS environment before production rollout.
 
 ### Upload From Your Terminal
 
@@ -45,7 +49,7 @@ Press Enter to leave an existing value unchanged, including `DATABASE_URL`
 provided by the Neon integration. At the subscriber secret prompt, enter
 `GENERATE` only for initial setup; an existing subscriber secret must remain
 stable for email links to keep working. The script also sets both public URLs
-and the production Clerk origin. It does not create a Neon database, run a
+and the production WorkOS callback URL. It does not create a Neon database, run a
 migration, or redeploy the application.
 
 ## Service Setup
@@ -54,7 +58,7 @@ migration, or redeploy the application.
 2. Generate and add `SUBSCRIBER_TOKEN_SECRET` (for example, `openssl rand -base64 48`). Keep this value stable after launch so historical unsubscribe links remain valid.
 3. With the production `DATABASE_URL` available locally or in a secure CI job, run `pnpm db:migrate`. The migration is idempotent and is intentionally not run during deployment.
 4. Verify `newsletter.hacker1db.dev` in Resend. The application sends from `newsletter@newsletter.hacker1db.dev`.
-5. Configure a production Clerk instance and its allowed domain. Use matching production keys and configure any enabled social sign-in providers.
+5. Configure WorkOS AuthKit, the callback/initiate-login/logout URLs above, and your enabled sign-in providers.
 6. Add the canonical domain to the Vercel project and apply the DNS records Vercel provides. Set `PUBLIC_SITE_URL` to that domain once it resolves.
 7. Use separate database/email/auth configuration for previews if preview deployments need working integrations.
 

@@ -1,3 +1,5 @@
+> Authentication update: the implementation now uses WorkOS AuthKit. The original Clerk design below is historical; see DEPLOYMENT.md for current configuration and session behavior.
+
 # Plan: Standalone Newsletter Site — newsletter.hacker1db.dev
 
 **Created:** 2026-03-26

@@ -17,8 +17,10 @@ const preview = spawn(
 			...process.env,
 			DATABASE_URL: '',
 			RESEND_API_KEY: '',
-			CLERK_SECRET_KEY: '',
-			VITE_CLERK_PUBLISHABLE_KEY: ''
+			WORKOS_API_KEY: 'sk_test_browser_fixture',
+			WORKOS_CLIENT_ID: 'client_browser_fixture',
+			WORKOS_COOKIE_PASSWORD: 'test-only-browser-cookie-password-32-characters',
+			WORKOS_REDIRECT_URI: 'http://127.0.0.1:4175/auth/callback/'
 		}
 	}
 );
@@ -62,17 +64,35 @@ try {
 	}
 	for (const [scenario, width, height] of [
 		['desktop-home', 1280, 900],
-		['mobile-home', 390, 844]
+		['mobile-home', 390, 844],
+		['desktop-login', 1280, 900],
+		['mobile-login', 390, 844],
+		['desktop-auth-error', 1280, 900],
+		['mobile-auth-error', 390, 844]
 	]) {
 		await call('browser_resize', { width, height });
-		await call('browser_navigate', { url });
+		const scenarioUrl =
+			url +
+			(scenario.includes('login')
+				? '/login/'
+				: scenario.includes('auth-error')
+					? '/auth/callback/'
+					: '/');
+		await call('browser_navigate', { url: scenarioUrl });
 		const snapshot = await call('browser_snapshot', {});
 		const text = snapshot.content
 			.filter((item) => item.type === 'text')
 			.map((item) => item.text)
 			.join('\n');
-		if (!text.includes('Email address') || !text.includes('Subscribe'))
+		if (
+			scenario.includes('home') &&
+			(!text.includes('Email address') || !text.includes('Subscribe'))
+		)
 			throw new Error('Signup controls missing from MCP snapshot');
+		if (scenario.includes('login') && !text.includes('Continue to sign in'))
+			throw new Error('Hosted login control missing');
+		if (scenario.includes('auth-error') && !text.includes('Sign-in could not be completed'))
+			throw new Error('Auth error recovery missing');
 		await writeFile(resolve(output, `${scenario}.txt`), text);
 		const result = await call('browser_take_screenshot', {
 			type: 'png',
@@ -82,11 +102,11 @@ try {
 		// Preserve the protocol response metadata without embedding image data in logs.
 		evidence.push({
 			scenario,
-			url,
+			url: scenarioUrl,
 			viewport: { width, height },
 			timestamp: new Date().toISOString(),
 			screenshot: `${scenario}.png`,
-			mode: 'local preview, no provider credentials',
+			mode: 'local preview, fake WorkOS configuration, no live provider calls',
 			tool: 'browser_take_screenshot',
 			response: result.content.filter((item) => item.type === 'text')
 		});

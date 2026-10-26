@@ -1,217 +1,199 @@
-import { generateKeyPairSync, sign } from 'node:crypto';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { env } from './env';
-const { getSession } = vi.hoisted(() => ({ getSession: vi.fn() }));
-vi.mock('@clerk/backend', async (importOriginal) => ({
-	...(await importOriginal<typeof import('@clerk/backend')>()),
-	createClerkClient: vi.fn(() => ({ sessions: { getSession } }))
+const sdk = vi.hoisted(() => ({
+	handle: vi.fn(),
+	configure: vi.fn(),
+	signOut: vi.fn(),
+	signIn: vi.fn()
 }));
-vi.mock('$lib/server/db', () => ({ getConfirmedSubscribers: vi.fn(async () => []) }));
-import {
-	createAdminSession,
-	isAdmin,
-	verifyAdminSession,
-	verifyAdminToken
-} from '../src/lib/server/auth';
+const db = vi.hoisted(() => ({ getConfirmedSubscribers: vi.fn(), getSubscriberCount: vi.fn() }));
+const email = vi.hoisted(() => ({ sendNewsletterEmail: vi.fn() }));
+vi.mock('@workos/authkit-sveltekit', () => ({
+	configureAuthKit: sdk.configure,
+	authKitHandle: () => sdk.handle,
+	authKit: { signOut: sdk.signOut, getSignInUrl: sdk.signIn }
+}));
+vi.mock('$lib/server/db', () => db);
+vi.mock('$lib/server/resend', () => email);
 import { handle } from '../src/hooks.server';
-import { POST as login } from '../src/routes/api/auth/+server';
+import { isAdmin } from '../src/lib/server/auth';
+import { actions, load } from '../src/routes/admin/+page.server';
+import { actions as loginActions } from '../src/routes/login/+page.server';
 import { POST as send } from '../src/routes/api/send/+server';
-import { actions, load as adminLoad } from '../src/routes/admin/+page.server';
-
-const origin = 'https://newsletter.hacker1db.dev';
-const keys = generateKeyPairSync('rsa', { modulusLength: 2048 });
-const wrongKeys = generateKeyPairSync('rsa', { modulusLength: 2048 });
-
-function token(overrides: Record<string, unknown> = {}, key = keys.privateKey) {
-	const now = Math.floor(Date.now() / 1000);
-	const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid: 'test' })).toString(
-		'base64url'
-	);
-	const payload = Buffer.from(
-		JSON.stringify({
-			sub: 'user_admin',
-			sid: 'sess_test',
-			iss: 'https://test.clerk.accounts.dev',
-			azp: origin,
-			iat: now - 1,
-			nbf: now - 1,
-			exp: now + 60,
-			...overrides
-		})
-	).toString('base64url');
-	const input = `${header}.${payload}`;
-	return `${input}.${sign('RSA-SHA256', Buffer.from(input), key).toString('base64url')}`;
-}
-
-function event(body: unknown = {}, userId?: string) {
+import { POST as logout } from '../src/routes/api/logout/+server';
+const origin = 'https://newsletter.example.com';
+function event(path = '/admin/', userId?: string) {
 	return {
-		request: new Request(`${origin}/api/auth/`, {
+		url: new URL(path, origin),
+		request: new Request(new URL(path, origin), {
 			method: 'POST',
-			headers: { 'content-type': 'application/json', origin },
-			body: JSON.stringify(body)
+			headers: { origin, 'content-type': 'application/json' },
+			body: JSON.stringify({ subject: 'News', htmlBody: '<p>News</p>' })
 		}),
-		url: new URL(`${origin}/api/auth/`),
-		locals: { userId },
+		locals: { userId, auth: { user: null, sessionId: undefined } },
 		cookies: { get: vi.fn(), set: vi.fn(), delete: vi.fn() }
 	};
 }
-
 beforeEach(() => {
-	for (const name of Object.keys(env)) delete env[name];
-	env.ADMIN_USER_IDS = ' user_admin, user_other ';
-	env.CLERK_SECRET_KEY = 'test-only-generated-session-signing-key';
-	env.CLERK_JWT_KEY = keys.publicKey.export({ type: 'spki', format: 'pem' }).toString();
-	getSession.mockReset().mockImplementation(async () => ({
-		id: 'sess_test',
-		userId: 'user_admin',
-		status: 'active',
-		expireAt: Date.now() + 86400000
-	}));
+	vi.clearAllMocks();
+	for (const key of Object.keys(env)) delete env[key];
+	Object.assign(env, {
+		ADMIN_USER_IDS: ' user_admin, user_other ',
+		WORKOS_API_KEY: 'sk_test_fixture',
+		WORKOS_CLIENT_ID: 'client_fixture',
+		WORKOS_REDIRECT_URI: origin + '/auth/callback/',
+		WORKOS_COOKIE_PASSWORD: 'test-only-cookie-password-32-characters'
+	});
+	sdk.handle.mockImplementation(async ({ event, resolve }) => {
+		event.locals.auth = { user: { id: 'user_admin' }, sessionId: 'session_fixture' };
+		return resolve(event);
+	});
+	db.getConfirmedSubscribers.mockResolvedValue([
+		{ email: 'fixture@example.com', unsubscribeToken: 'fixture' }
+	]);
+	db.getSubscriberCount.mockResolvedValue(1);
+	email.sendNewsletterEmail.mockResolvedValue({ sent: 1, failed: 0 });
+	sdk.signOut.mockResolvedValue(
+		new Response(null, {
+			status: 302,
+			headers: {
+				Location:
+					'https://api.workos.com/user_management/sessions/logout?session_id=session_fixture'
+			}
+		})
+	);
+	sdk.signIn.mockResolvedValue('https://api.workos.com/user_management/authorize');
 });
-
-afterEach(() => vi.useRealTimers());
-
-describe('real Clerk JWT verification', () => {
-	it('accepts only a signed, current allowlisted session', async () => {
-		expect(await verifyAdminToken(token())).toMatchObject({ userId: 'user_admin' });
+describe('WorkOS integration boundaries (provider mocked)', () => {
+	it('requires exact allowlisted WorkOS user IDs and denies an empty allowlist', () => {
+		expect(isAdmin('user_admin')).toBe(true);
 		expect(isAdmin('user_ad')).toBe(false);
+		env.ADMIN_USER_IDS = '';
+		expect(isAdmin('user_admin')).toBe(false);
 	});
-	it.each(['', ' ', ','])('denies an empty admin allowlist (%j)', async (value) => {
-		env.ADMIN_USER_IDS = value;
-		expect(await verifyAdminToken(token())).toBeNull();
-	});
-	it('denies missing allowlist or verification credentials', async () => {
-		delete env.ADMIN_USER_IDS;
-		expect(await verifyAdminToken(token())).toBeNull();
-		env.ADMIN_USER_IDS = 'user_admin';
-		delete env.CLERK_JWT_KEY;
-		delete env.CLERK_SECRET_KEY;
-		expect(await verifyAdminToken(token())).toBeNull();
-	});
-	it.each([
-		{ sub: 'user_not_admin' },
-		{ exp: 1 },
-		{ nbf: 9999999999 },
-		{ iat: 9999999999 },
-		{ azp: 'https://attacker.example' },
-		{ azp: undefined },
-		{ sid: undefined },
-		{ sid: '' },
-		{ sts: 'pending' }
-	])('rejects invalid claims %j', async (claims) => {
-		expect(await verifyAdminToken(token(claims))).toBeNull();
-	});
-	it('rejects arbitrary cookies, unsigned tokens, tampering and another signing key', async () => {
-		expect(await verifyAdminToken('user_admin')).toBeNull();
-		const valid = token();
-		const [header, payload] = valid.split('.');
-		expect(await verifyAdminToken(`${header}.${payload}.`)).toBeNull();
-		const changed = Buffer.from(JSON.stringify({ sub: 'user_other' })).toString('base64url');
-		expect(await verifyAdminToken(`${header}.${changed}.${valid.split('.')[2]}`)).toBeNull();
-		expect(await verifyAdminToken(token({}, wrongKeys.privateKey))).toBeNull();
-	});
-});
-
-describe('request boundaries', () => {
-	it('exchanges a verified JWT for a signed HttpOnly server session', async () => {
-		const jwt = token();
-		const e = event({ token: jwt });
-		expect((await login(e as never)).status).toBe(200);
-		expect(e.cookies.set).toHaveBeenCalledWith(
-			'admin_session',
-			expect.any(String),
-			expect.objectContaining({
-				httpOnly: true,
-				secure: true,
-				sameSite: 'lax',
-				path: '/',
-				maxAge: expect.any(Number)
-			})
-		);
-		const cookie = e.cookies.set.mock.calls[0];
-		expect(cookie[1]).not.toBe(jwt);
-		expect(cookie[2].maxAge).toBeLessThanOrEqual(8 * 60 * 60);
-		expect(await verifyAdminSession(cookie[1])).toEqual({ userId: 'user_admin' });
-	});
-	it('denies an unapproved signed user and clears the cookie', async () => {
-		const e = event({ token: token({ sub: 'user_not_admin' }) });
-		expect((await login(e as never)).status).toBe(401);
-		expect(e.cookies.set).not.toHaveBeenCalled();
-		expect(e.cookies.delete).toHaveBeenCalled();
-	});
-	it('rechecks Clerk each request and removes revoked/forged cookies', async () => {
-		const e = event({}, 'stale_user');
-		const resolve = vi.fn(async () => new Response());
-		const session = await createAdminSession(token());
-		e.cookies.get.mockReturnValue(session!.token);
-		await handle({ event: e, resolve } as never);
-		expect(e.locals.userId).toBe('user_admin');
-		getSession.mockResolvedValue({
-			id: 'sess_test',
-			userId: 'user_admin',
-			status: 'revoked',
-			expireAt: Date.now() + 86400000
-		});
-		await handle({ event: e, resolve } as never);
+	it('does not process provider sessions on public requests', async () => {
+		const e = event('/', 'stale');
+		e.cookies.get.mockReturnValue('old-cookie');
+		await handle({ event: e, resolve: async () => new Response() } as never);
+		expect(sdk.handle).not.toHaveBeenCalled();
 		expect(e.locals.userId).toBeUndefined();
+	});
+	it('maps verified provider identity to admin authorization and clears legacy cookies', async () => {
+		const e = event();
+		e.cookies.get.mockReturnValue('legacy');
+		const response = await handle({ event: e, resolve: async () => new Response() } as never);
+		expect(e.locals.userId).toBe('user_admin');
+		expect(response.headers.get('cache-control')).toBe('private, no-store');
 		expect(e.cookies.delete).toHaveBeenCalledWith('admin_session', { path: '/' });
 	});
-	it('keeps admin interactions authenticated past the original JWT expiry without accepting expired JWTs', async () => {
-		vi.useFakeTimers();
-		const jwt = token();
-		const session = await createAdminSession(jwt);
-		vi.setSystemTime(Date.now() + 120000);
-		expect(await verifyAdminToken(jwt)).toBeNull();
-		expect(await createAdminSession(jwt)).toBeNull();
+	it('denies non-admin provider users and removed admins', async () => {
+		sdk.handle.mockImplementation(async ({ event, resolve }) => {
+			event.locals.auth = { user: { id: 'user_stranger' } };
+			return resolve(event);
+		});
 		const e = event();
-		e.cookies.get.mockReturnValue(session!.token);
-		await handle({ event: e, resolve: async () => new Response() } as never);
-		expect(e.locals.userId).toBe('user_admin');
-		const form = new FormData();
-		form.set('subject', 'Test');
-		form.set('htmlBody', '<p>Test</p>');
-		e.request = new Request(`${origin}/admin/`, { method: 'POST', body: form });
-		expect(await actions.send!(e as never)).toMatchObject({
-			status: 400,
-			data: { error: 'No confirmed subscribers.' }
-		});
-		vi.setSystemTime(Date.now() + 8 * 60 * 60 * 1000);
-		expect(await verifyAdminSession(session!.token)).toBeNull();
-	});
-	it('denies tampered cookies, mismatched users, removed admins, and Clerk outages', async () => {
-		const session = await createAdminSession(token());
-		expect(await verifyAdminSession('user_admin')).toBeNull();
-		expect(await verifyAdminSession(`A${session!.token.slice(1)}`)).toBeNull();
-		getSession.mockResolvedValue({
-			id: 'sess_test',
-			userId: 'user_other',
-			status: 'active',
-			expireAt: Date.now() + 86400000
-		});
-		expect(await verifyAdminSession(session!.token)).toBeNull();
-		getSession.mockRejectedValue(new Error('Service unavailable'));
-		expect(await verifyAdminSession(session!.token)).toBeNull();
+		await handle({ event: e, resolve: async () => send(e as never) } as never);
+		expect(e.locals.userId).toBeUndefined();
+		expect(email.sendNewsletterEmail).not.toHaveBeenCalled();
 		env.ADMIN_USER_IDS = '';
-		expect(await verifyAdminSession(session!.token)).toBeNull();
+		expect(isAdmin('user_admin')).toBe(false);
 	});
-	it.each([undefined, 'user_not_admin'])(
-		'denies direct actions/API/data loads before side effects (%j)',
+	it('fails closed without auth configuration while allowing public pages', async () => {
+		delete env.WORKOS_API_KEY;
+		const e = event('/api/send/', 'stale');
+		const response = await handle({ event: e, resolve: async () => send(e as never) } as never);
+		expect(response.status).toBe(401);
+		expect(sdk.handle).not.toHaveBeenCalled();
+	});
+	it('starts hosted login with a fixed admin return path', async () => {
+		await expect(loginActions.default!(event('/login/') as never)).rejects.toMatchObject({
+			status: 303,
+			location: 'https://api.workos.com/user_management/authorize'
+		});
+		expect(sdk.signIn).toHaveBeenCalledWith({ returnTo: '/admin/' });
+	});
+	it('ends the provider session and prevents a refresh from restoring the logout cookie', async () => {
+		const e = event('/api/logout/');
+		sdk.handle.mockImplementation(async ({ event, resolve }) => {
+			event.locals.auth = { user: { id: 'user_admin' }, sessionId: 'session_fixture' };
+			const response = await resolve(event);
+			response.headers.append('Set-Cookie', 'wos-session=refreshed; Path=/; HttpOnly');
+			return response;
+		});
+		const response = await handle({ event: e, resolve: async () => logout(e as never) } as never);
+		expect(sdk.signOut).toHaveBeenCalledWith(e);
+		expect(response.headers.get('location')).toContain(
+			'https://api.workos.com/user_management/sessions/logout'
+		);
+		expect(response.headers.getSetCookie()).toEqual([]);
+		expect(e.cookies.delete).toHaveBeenCalledWith('wos-session', { path: '/' });
+	});
+	it('rejects cross-origin logout without clearing the session', async () => {
+		const e = event('/api/logout/');
+		e.request.headers.set('origin', 'https://attacker.example');
+		expect((await logout(e as never)).status).toBe(403);
+		expect(sdk.signOut).not.toHaveBeenCalled();
+		expect(e.cookies.delete).not.toHaveBeenCalled();
+	});
+	it('does not repeat side effects if the SDK retries resolve after an error', async () => {
+		const e = event();
+		const resolve = vi.fn().mockRejectedValue(new Error('response failure'));
+		sdk.handle.mockImplementation(async ({ event, resolve }) => {
+			try {
+				return await resolve(event);
+			} catch {
+				return resolve(event);
+			}
+		});
+		await expect(handle({ event: e, resolve } as never)).rejects.toThrow('response failure');
+		expect(resolve).toHaveBeenCalledTimes(1);
+	});
+});
+describe('authenticated newsletter routes', () => {
+	it.each([undefined, 'user_stranger'])(
+		'blocks unauthorized actions before side effects (%s)',
 		async (userId) => {
-			const e = event({}, userId);
-			const read = vi.spyOn(e.request, 'formData');
-			expect((await actions.send!(e as never))?.status).toBe(401);
+			const e = event('/admin/', userId);
+			expect(await actions.send!(e as never)).toMatchObject({ status: 401 });
 			expect((await send(e as never)).status).toBe(401);
-			expect(read).not.toHaveBeenCalled();
-			await expect(adminLoad(e as never)).rejects.toMatchObject({
-				status: 302,
-				location: '/login/'
-			});
+			await expect(load(e as never)).rejects.toMatchObject({ status: 302, location: '/login/' });
+			expect(db.getConfirmedSubscribers).not.toHaveBeenCalled();
 		}
 	);
-	it('rejects cross-origin cookie login/send requests', async () => {
-		const e = event({ token: token() }, 'user_admin');
-		e.request.headers.set('origin', 'https://attacker.example');
-		expect((await login(e as never)).status).toBe(403);
-		expect((await send(e as never)).status).toBe(403);
+	it('loads the authenticated subscriber count', async () => {
+		expect(await load(event('/admin/', 'user_admin') as never)).toEqual({ subscriberCount: 1 });
+	});
+	it('sends through both form and JSON routes using the same service', async () => {
+		const e = event('/api/send/', 'user_admin');
+		expect(await (await send(e as never)).json()).toEqual({ sent: 1, failed: 0 });
+		const form = new FormData();
+		form.set('subject', 'News');
+		form.set('htmlBody', '<p>News</p>');
+		e.request = new Request(new URL('/admin/', origin), { method: 'POST', body: form });
+		expect(await actions.send!(e as never)).toEqual({ sent: 1, failed: 0 });
+		expect(email.sendNewsletterEmail).toHaveBeenCalledTimes(2);
+	});
+	it('returns no-subscriber and provider failures without leaking errors', async () => {
+		db.getConfirmedSubscribers.mockResolvedValue([]);
+		const e = event('/api/send/', 'user_admin');
+		expect(await (await send(e as never)).json()).toEqual({ error: 'No confirmed subscribers.' });
+		db.getConfirmedSubscribers.mockRejectedValue(new Error('sensitive database detail'));
+		const response = await send(event('/api/send/', 'user_admin') as never);
+		expect(response.status).toBe(500);
+		expect(await response.json()).toEqual({ error: 'Failed to send newsletter.' });
+	});
+	it('rejects cross-origin, missing-origin, invalid JSON and empty content', async () => {
+		for (const header of ['https://attacker.example', null]) {
+			const e = event('/api/send/', 'user_admin');
+			if (header) e.request.headers.set('origin', header);
+			else e.request.headers.delete('origin');
+			expect((await send(e as never)).status).toBe(403);
+		}
+		for (const body of ['invalid', 'null', '{}']) {
+			const e = event('/api/send/', 'user_admin');
+			e.request = new Request(e.url, { method: 'POST', headers: { origin }, body });
+			expect((await send(e as never)).status).toBe(400);
+		}
+		expect(email.sendNewsletterEmail).not.toHaveBeenCalled();
 	});
 });
