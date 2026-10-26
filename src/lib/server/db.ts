@@ -59,8 +59,10 @@ export async function addSubscriber(email: string): Promise<SubscriptionTokens |
 	`) as { id: string; confirm_token_hash: string }[];
 	if (!rows.length) return null;
 	return {
-		confirmationToken, unsubscribeToken: createUnsubscribeToken(rows[0].id),
-		subscriberId: rows[0].id, previousConfirmationHash: rows[0].confirm_token_hash
+		confirmationToken,
+		unsubscribeToken: createUnsubscribeToken(rows[0].id),
+		subscriberId: rows[0].id,
+		previousConfirmationHash: rows[0].confirm_token_hash
 	};
 }
 
@@ -98,11 +100,16 @@ export async function unsubscribeSubscriber(token: string): Promise<boolean> {
 	return rows.length > 0;
 }
 
-export async function getConfirmedSubscribers(): Promise<{ email: string; unsubscribeToken: string }[]> {
+export async function getConfirmedSubscribers(): Promise<
+	{ email: string; unsubscribeToken: string }[]
+> {
 	const rows = (await getDb()`
 		SELECT id, email FROM subscribers WHERE status = 'active' ORDER BY created_at ASC
 	`) as { id: string; email: string }[];
-	return rows.map((row) => ({ email: row.email, unsubscribeToken: createUnsubscribeToken(row.id) }));
+	return rows.map((row) => ({
+		email: row.email,
+		unsubscribeToken: createUnsubscribeToken(row.id)
+	}));
 }
 
 export async function getSubscriberCount(): Promise<number> {

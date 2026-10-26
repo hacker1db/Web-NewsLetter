@@ -1,14 +1,30 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { env } from './env';
 
-type Subscriber = { id: string; email: string; status: 'pending' | 'active' | 'unsubscribed'; confirmHash: string; unsubscribeHash: string };
+type Subscriber = {
+	id: string;
+	email: string;
+	status: 'pending' | 'active' | 'unsubscribed';
+	confirmHash: string;
+	unsubscribeHash: string;
+};
 const subscribers = new Map<string, Subscriber>();
 const { sql } = vi.hoisted(() => ({ sql: vi.fn() }));
 vi.mock('@neondatabase/serverless', () => ({ neon: vi.fn(() => sql) }));
 const { send } = vi.hoisted(() => ({ send: vi.fn() }));
-vi.mock('resend', () => ({ Resend: class { emails = { send }; } }));
+vi.mock('resend', () => ({
+	Resend: class {
+		emails = { send };
+	}
+}));
 
-import { addSubscriber, confirmSubscriber, finalizeSubscription, getConfirmedSubscribers, unsubscribeSubscriber } from '../src/lib/server/db';
+import {
+	addSubscriber,
+	confirmSubscriber,
+	finalizeSubscription,
+	getConfirmedSubscribers,
+	unsubscribeSubscriber
+} from '../src/lib/server/db';
 import { POST as subscribe } from '../src/routes/api/subscribe/+server';
 
 beforeEach(() => {
@@ -34,13 +50,17 @@ beforeEach(() => {
 			expect(query).toContain('AND confirm_token_hash =');
 			expect(query).toContain("AND status IN ('pending', 'unsubscribed')");
 			const [confirmHash, unsubscribeHash, id, previousHash] = values;
-			const record = [...subscribers.values()].find((item) => item.id === id && item.confirmHash === previousHash && item.status !== 'active');
+			const record = [...subscribers.values()].find(
+				(item) => item.id === id && item.confirmHash === previousHash && item.status !== 'active'
+			);
 			if (!record) return [];
 			Object.assign(record, { status: 'pending', confirmHash, unsubscribeHash });
 			return [{ id }];
 		}
 		if (query.includes("SET status = 'active'")) {
-			const record = [...subscribers.values()].find((item) => item.status === 'pending' && item.confirmHash === values[0]);
+			const record = [...subscribers.values()].find(
+				(item) => item.status === 'pending' && item.confirmHash === values[0]
+			);
 			if (!record) return [];
 			record.status = 'active';
 			return [{ id: record.id }];
@@ -52,9 +72,13 @@ beforeEach(() => {
 			return [{ id: record.id }];
 		}
 		if (query.includes('SELECT id, email')) {
-			return [...subscribers.values()].filter((item) => item.status === 'active').map(({ id, email }) => ({ id, email }));
+			return [...subscribers.values()]
+				.filter((item) => item.status === 'active')
+				.map(({ id, email }) => ({ id, email }));
 		}
-		return [{ count: String([...subscribers.values()].filter((item) => item.status === 'active').length) }];
+		return [
+			{ count: String([...subscribers.values()].filter((item) => item.status === 'active').length) }
+		];
 	});
 });
 
@@ -62,7 +86,9 @@ it('requires confirmation, suppresses unsubscribed records, and permits a fresh 
 	const first = await addSubscriber('test@example.com');
 	expect(first).not.toBeNull();
 	expect(await confirmSubscriber(first!.confirmationToken)).toBe(true);
-	expect(await getConfirmedSubscribers()).toEqual([{ email: 'test@example.com', unsubscribeToken: first!.unsubscribeToken }]);
+	expect(await getConfirmedSubscribers()).toEqual([
+		{ email: 'test@example.com', unsubscribeToken: first!.unsubscribeToken }
+	]);
 	expect(await unsubscribeSubscriber(first!.unsubscribeToken)).toBe(true);
 	expect(await unsubscribeSubscriber(first!.unsubscribeToken)).toBe(true);
 	expect(await getConfirmedSubscribers()).toEqual([]);
@@ -76,9 +102,17 @@ it('requires confirmation, suppresses unsubscribed records, and permits a fresh 
 
 it('permits a new pending confirmation attempt after provider rejection', async () => {
 	function event() {
-		return { request: new Request('https://newsletter.hacker1db.dev/api/subscribe/', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'test@example.com' }) }) };
+		return {
+			request: new Request('https://newsletter.hacker1db.dev/api/subscribe/', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ email: 'test@example.com' })
+			})
+		};
 	}
-	send.mockResolvedValueOnce({ data: null, error: { message: 'Rejected' } }).mockResolvedValueOnce({ data: { id: 'email_test' }, error: null });
+	send
+		.mockResolvedValueOnce({ data: null, error: { message: 'Rejected' } })
+		.mockResolvedValueOnce({ data: { id: 'email_test' }, error: null });
 	const original = await addSubscriber('test@example.com');
 	const originalRecord = { ...subscribers.get('test@example.com')! };
 	expect((await subscribe(event() as never)).status).toBe(500);
@@ -92,7 +126,9 @@ it('allows an old pending link to confirm after replacement email fails', async 
 	const original = await addSubscriber('test@example.com');
 	send.mockResolvedValue({ data: null, error: { message: 'Rejected' } });
 	const request = new Request('https://newsletter.hacker1db.dev/api/subscribe/', {
-		method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'test@example.com' })
+		method: 'POST',
+		headers: { 'content-type': 'application/json' },
+		body: JSON.stringify({ email: 'test@example.com' })
 	});
 	expect((await subscribe({ request } as never)).status).toBe(500);
 	expect(await confirmSubscriber(original!.confirmationToken)).toBe(true);

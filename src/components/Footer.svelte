@@ -38,23 +38,31 @@
 			<!-- Left: Logo + bio -->
 			<div>
 				<div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
-					<span style="font-family: Monaco, Menlo, 'Courier New', monospace; font-size: 1rem; color: #6FC1FF;">$</span>
+					<span
+						style="font-family: Monaco, Menlo, 'Courier New', monospace; font-size: 1rem; color: #6FC1FF;"
+						>$</span
+					>
 					<h3 style="font-size: 1.125rem; font-weight: 700; color: #ffffff; margin: 0;">
 						hacker1db newsletter
 					</h3>
 				</div>
-				<p style="color: #9ca3af; font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.5rem; max-width: 300px;">
+				<p
+					style="color: #9ca3af; font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.5rem; max-width: 300px;"
+				>
 					Security posts, dev notes, hacker stuff delivered to your inbox.
 				</p>
 			</div>
 
 			<!-- Right: Social links -->
 			<div>
-				<p style="color: #6b7280; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">
+				<p
+					style="color: #6b7280; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;"
+				>
 					Find me online
 				</p>
 				<div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-					{#each socials as social}
+					{#each socials as social (social.name)}
+						<!-- eslint-disable svelte/no-navigation-without-resolve -- Static external social URLs, not app routes. -->
 						<a
 							href={social.url}
 							target="_blank"
@@ -72,6 +80,7 @@
 								<path d={social.path} />
 							</svg>
 						</a>
+						<!-- eslint-enable svelte/no-navigation-without-resolve -->
 					{/each}
 				</div>
 			</div>
@@ -80,13 +89,14 @@
 
 	<!-- Bottom bar -->
 	<div style="border-top: 1px solid #1f2937; padding: 1.25rem 1rem;">
-		<div style="max-width: 1024px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+		<div
+			style="max-width: 1024px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;"
+		>
 			<div style="color: #6b7280; font-size: 0.8rem;">
-				&copy; {currentYear} {siteConfig.author}
+				&copy; {currentYear}
+				{siteConfig.author}
 			</div>
-			<div style="color: #6b7280; font-size: 0.8rem;">
-				Built with SvelteKit, deployed on Vercel
-			</div>
+			<div style="color: #6b7280; font-size: 0.8rem;">Built with SvelteKit, deployed on Vercel</div>
 		</div>
 	</div>
 </footer>
@@ -114,7 +124,7 @@
 
 	.social-icon:hover {
 		background: rgba(255, 255, 255, 0.12);
-		color: #6FC1FF;
+		color: #6fc1ff;
 		transform: translateY(-2px);
 	}
 

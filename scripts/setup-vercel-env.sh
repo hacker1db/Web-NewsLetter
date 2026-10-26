@@ -63,7 +63,7 @@ trap 'exit 129' HUP
 tty_state=$(stty -g <&9) || fail 'Unable to read terminal settings.'
 stty -echo <&9 || fail 'Unable to disable terminal echo.'
 
-names=(DATABASE_URL RESEND_API_KEY CLERK_SECRET_KEY VITE_CLERK_PUBLISHABLE_KEY ADMIN_USER_IDS SUBSCRIBER_TOKEN_SECRET)
+names=(DATABASE_URL RESEND_API_KEY WORKOS_API_KEY WORKOS_CLIENT_ID WORKOS_COOKIE_PASSWORD ADMIN_USER_IDS SUBSCRIBER_TOKEN_SECRET)
 
 validate() {
   # Only the field name is argv; the candidate arrives through stdin.
@@ -81,8 +81,9 @@ validate() {
         } catch (_) {}
         break;
       case "RESEND_API_KEY": valid = /^re_[A-Za-z0-9_-]{10,}$/.test(value); break;
-      case "CLERK_SECRET_KEY": valid = /^sk_(live|test)_[A-Za-z0-9_-]{10,}$/.test(value); break;
-      case "VITE_CLERK_PUBLISHABLE_KEY": valid = /^pk_(live|test)_[A-Za-z0-9+/=_-]{10,}$/.test(value); break;
+      case "WORKOS_API_KEY": valid = /^sk_[A-Za-z0-9_-]{10,}$/.test(value); break;
+      case "WORKOS_CLIENT_ID": valid = /^client_[A-Za-z0-9]+$/.test(value); break;
+      case "WORKOS_COOKIE_PASSWORD": valid = value.length >= 32 && !/\s/.test(value); break;
       case "ADMIN_USER_IDS": valid = /^user_[A-Za-z0-9]+(\s*,\s*user_[A-Za-z0-9]+)*$/.test(value); break;
       case "SUBSCRIBER_TOKEN_SECRET": valid = value.length >= 32 && !/\s/.test(value); break;
     }
@@ -146,7 +147,7 @@ for ((i = 0; i < ${#names[@]}; i++)); do
   if [[ -z "${setup_values[$i]}" ]]; then
     printf 'Kept %s unchanged (missing values remain unset).\n' "$name" >&9
   else
-    if [[ "$name" == VITE_CLERK_PUBLISHABLE_KEY ]]; then
+    if [[ "$name" == WORKOS_CLIENT_ID ]]; then
       builtin printf '%s' "${setup_values[$i]}" | upload "$name" public
     else
       builtin printf '%s' "${setup_values[$i]}" | upload "$name" sensitive
@@ -158,7 +159,7 @@ unset setup_values
 
 builtin printf '%s' 'https://newsletter.hacker1db.dev' | upload PUBLIC_SITE_URL public
 builtin printf '%s' 'https://hacker1db.dev' | upload PUBLIC_BLOG_URL public
-builtin printf '%s' 'https://newsletter.hacker1db.dev' | upload CLERK_AUTHORIZED_PARTIES public
+builtin printf '%s' 'https://newsletter.hacker1db.dev/auth/callback/' | upload WORKOS_REDIRECT_URI public
 
 printf '%s\n' \
   'Uploads complete. No deployment or migration was run.' \

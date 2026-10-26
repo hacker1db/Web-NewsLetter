@@ -1,3 +1,5 @@
+> Authentication update: the implementation now uses WorkOS AuthKit. The original Clerk design below is historical; see DEPLOYMENT.md for current configuration and session behavior.
+
 # Plan: Standalone Newsletter Site — newsletter.hacker1db.dev
 
 **Created:** 2026-03-26
@@ -9,6 +11,7 @@
 ## Requirements Summary
 
 Build a standalone, visually stunning newsletter site at `newsletter.hacker1db.dev` that:
+
 - Matches the hacker1db.dev terminal/dark aesthetic (bg `#1a1d21`, accent `#6FC1FF`, Inter font)
 - Lives in its own repo and deploys independently on Vercel
 - Has a working subscribe form (Resend + Turso backend)
@@ -21,11 +24,11 @@ Build a standalone, visually stunning newsletter site at `newsletter.hacker1db.d
 
 ## Resend Pricing Reference
 
-| Plan     | Price   | Emails/mo | Emails/day | Domains | Notes                          |
-|----------|---------|-----------|------------|---------|--------------------------------|
-| Free     | $0/mo   | 3,000     | 100        | 1       | Great for getting started      |
-| Pro      | $20/mo  | 50,000    | unlimited  | 10      | ~$0.40/1k after 50k included   |
-| Scale    | $90/mo  | 100,000+  | unlimited  | unlimited | Volume discounts              |
+| Plan  | Price  | Emails/mo | Emails/day | Domains   | Notes                        |
+| ----- | ------ | --------- | ---------- | --------- | ---------------------------- |
+| Free  | $0/mo  | 3,000     | 100        | 1         | Great for getting started    |
+| Pro   | $20/mo | 50,000    | unlimited  | 10        | ~$0.40/1k after 50k included |
+| Scale | $90/mo | 100,000+  | unlimited  | unlimited | Volume discounts             |
 
 **Recommendation:** Start on Free. Welcome and confirm emails (1 per signup) are fine on Free up to 100 new signups/day. Upgrade to Pro **before your first blast send to >100 confirmed subscribers** — a single blast to 101+ people will hit the 100/day ceiling mid-send. Verify your domain in Resend dashboard before first send for deliverability.
 
@@ -53,21 +56,21 @@ Build a standalone, visually stunning newsletter site at `newsletter.hacker1db.d
 
 ## Tech Stack
 
-| Layer     | Choice              | Reason                                     |
-|-----------|---------------------|--------------------------------------------|
-| Framework | SvelteKit 2.x       | Familiar, SSR+static hybrid, fast          |
-| Styling   | Tailwind CSS 4.x    | Matches main blog toolchain                |
-| Email     | Resend              | Free tier generous, great DX               |
-| Database  | Turso (libSQL)      | Lightweight, serverless-friendly, free tier |
-| Auth      | Clerk + Discord OAuth   | Managed auth, Discord social login, no password to store |
-| Deploy    | Vercel              | Same platform as main blog                 |
-| DNS       | Existing domain     | Add subdomain CNAME to Vercel              |
+| Layer     | Choice                | Reason                                                   |
+| --------- | --------------------- | -------------------------------------------------------- |
+| Framework | SvelteKit 2.x         | Familiar, SSR+static hybrid, fast                        |
+| Styling   | Tailwind CSS 4.x      | Matches main blog toolchain                              |
+| Email     | Resend                | Free tier generous, great DX                             |
+| Database  | Turso (libSQL)        | Lightweight, serverless-friendly, free tier              |
+| Auth      | Clerk + Discord OAuth | Managed auth, Discord social login, no password to store |
+| Deploy    | Vercel                | Same platform as main blog                               |
+| DNS       | Existing domain       | Add subdomain CNAME to Vercel                            |
 
 ---
 
 ## Page Layout
 
-```
+```text
 newsletter.hacker1db.dev
 ┌─────────────────────────────────────────────┐
 │  HERO                                       │
@@ -98,7 +101,7 @@ newsletter.hacker1db.dev
 
 ## Repository Structure
 
-```
+```text
 hacker1db-newsletter/              ← new standalone repo
 ├── src/
 │   ├── routes/
@@ -167,10 +170,12 @@ CREATE TABLE subscribers (
 ## Key Routes & Endpoint Logic
 
 ### `GET / POST /` — Landing page
+
 - SSR loads 3 recent posts from `hacker1db.dev/api/posts.json`
 - Form POSTs to `/api/subscribe`
 
 ### `POST /api/subscribe`
+
 1. Validate email format (regex)
 2. Check for duplicate (return friendly error if exists)
 3. Generate token via `crypto.randomUUID()`
@@ -179,26 +184,31 @@ CREATE TABLE subscribers (
 6. Redirect to `/success`
 
 ### `GET /api/confirm?token=`
+
 1. Look up subscriber by token
 2. Set `confirmed=1`
 3. Redirect to `/` with `?confirmed=true` flash message
 
 ### `GET /api/unsubscribe?token=`
+
 1. Look up subscriber by token
 2. Delete row
 3. Render inline "You've been unsubscribed" confirmation
 
 ### `GET /login`
+
 - Renders Clerk `<SignIn />` component configured with Discord as the only social provider
 - Clerk handles the OAuth redirect, token exchange, and session cookie automatically
 - On success: Clerk redirects to `/admin`
 
 ### `GET /admin` (protected by `+layout.server.ts`)
+
 - Auth guard: `const { userId } = locals.auth()` → redirect to `/login` if null
 - Load confirmed subscriber count from DB
 - Render compose form: subject + HTML body textarea + "Send" button
 
 ### `POST /api/send` (Clerk-protected)
+
 1. Verify Clerk session via `locals.auth()` (reject 401 if no `userId`)
 2. Accept `{ subject, htmlBody }` from form
 3. Fetch all `confirmed=1` subscribers from DB
@@ -206,6 +216,7 @@ CREATE TABLE subscribers (
 5. Log send results; return success/error
 
 ### `POST /api/logout`
+
 1. Call Clerk `signOut()` (invalidates session server-side)
 2. Redirect to `/login`
 
@@ -216,11 +227,13 @@ CREATE TABLE subscribers (
 Build as TypeScript functions returning HTML strings. All styles must be **inline** — email clients strip external CSS.
 
 **`welcome.ts`** — triggered on signup:
+
 - Subject: "Confirm your subscription to hacker1db"
 - Body: confirmation link (`/api/confirm?token=...`), unsubscribe link
 - Keep minimal: dark bg, cyan CTA button, Inter-equivalent web-safe font stack
 
 **`newsletter.ts`** — triggered via `/admin` send:
+
 - Subject: passed in from admin compose form
 - Body: passed in as HTML; wrapped in branded container
 - Footer: always includes unsubscribe link (`/api/unsubscribe?token=...`)
@@ -230,6 +243,7 @@ Build as TypeScript functions returning HTML strings. All styles must be **inlin
 ## Implementation Phases
 
 ### Phase 1 — Repo & Scaffold
+
 - [x] ~~`bun create svelte@latest hacker1db-newsletter` (SvelteKit skeleton, TypeScript)~~
 - [x] ~~`bun add -d @tailwindcss/vite tailwindcss`~~
 - [x] ~~`bun add resend @libsql/client`~~
@@ -238,6 +252,7 @@ Build as TypeScript functions returning HTML strings. All styles must be **inlin
 - [ ] Add `newsletter.hacker1db.dev` CNAME in DNS → Vercel
 
 ### Phase 2 — Visual Design
+
 - [x] ~~`Hero.svelte`: terminal heading `$ subscribe --to hacker1db▋`, CSS `@keyframes blink` cursor, tagline, form slot~~
 - [x] ~~`SubscribeForm.svelte`: email input + cyan submit button, Svelte `$state` for loading/error/success~~
 - [x] ~~`RecentPosts.svelte`: 3-col responsive grid, `.post-card` style (bg `#111827`, border `#374151`, hover accent)~~
@@ -248,6 +263,7 @@ Build as TypeScript functions returning HTML strings. All styles must be **inlin
 - [x] ~~`/success` page: terminal-style "message sent" confirmation~~
 
 ### Phase 3 — Subscribe Backend
+
 - [ ] Create Turso DB: `turso db create hacker1db-newsletter`
 - [ ] Run schema migration (see Database Schema above)
 - [x] ~~`src/lib/server/db.ts`: client init, `addSubscriber()`, `confirmSubscriber(token)`, `removeSubscriber(token)`, `getConfirmedSubscribers()`, `getSubscriberCount()`~~
@@ -259,6 +275,7 @@ Build as TypeScript functions returning HTML strings. All styles must be **inlin
 - [x] ~~`GET /api/unsubscribe?token=` endpoint~~
 
 ### Phase 4 — Admin & Auth (Clerk + Discord)
+
 - [x] ~~`bun add @clerk/clerk-js` (v6.3.3 installed)~~
 - [ ] Create Clerk application; enable **Discord** as the only social provider in Clerk dashboard
 - [ ] Set Clerk redirect URL: after sign-in → `/admin`
@@ -273,6 +290,7 @@ Build as TypeScript functions returning HTML strings. All styles must be **inlin
 - [x] ~~`POST /api/logout`: redirect to `/login`~~
 
 ### Phase 5 — Polish & Deploy
+
 - [x] ~~Add `.env.example` (all vars documented)~~
 - [ ] Add all env vars to Vercel project settings
 - [ ] Test full flow: subscribe → confirm email → admin login → compose → send → unsubscribe
@@ -308,6 +326,7 @@ PUBLIC_SITE_URL=https://newsletter.hacker1db.dev
 The "Recent Posts" section fetches from the main blog.
 
 **Option A (preferred):** Add `GET /api/posts.json` to the main blog (`src/routes/api/posts.json/+server.ts`) returning the 3 most recent posts:
+
 ```json
 [{ "title": "...", "slug": "...", "date": "...", "tags": ["..."] }]
 ```
@@ -320,16 +339,16 @@ Implement Option A first (trivial addition to main blog repo).
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| Blog API down → posts section broken | `try/catch` in `+page.server.ts`; render static "Visit the blog →" fallback card |
-| Turso cold start on subscribe | `@libsql/client` libsql:// URL; keep warm via periodic ping or upgrade to Turso Pro |
-| Resend 100/day free tier limit | Acceptable to ~100 subscribers; upgrade to Pro ($20/mo) before any blast send |
-| DNS propagation delay | Set up Vercel project first, then point DNS; expect up to 24hr |
-| Discord account compromised | Clerk handles MFA options; enable 2FA on Discord account |
-| Clerk outage blocks admin access | Rare; Clerk has 99.99% SLA. Fallback: use Resend API directly if urgent |
-| Repo style drift from main blog | Keep shared colors in a single `app.css`; no npm package needed |
-| Unconfirmed spam signups | Double opt-in (confirmed=0 until email click) keeps list clean |
+| Risk                                 | Mitigation                                                                          |
+| ------------------------------------ | ----------------------------------------------------------------------------------- |
+| Blog API down → posts section broken | `try/catch` in `+page.server.ts`; render static "Visit the blog →" fallback card    |
+| Turso cold start on subscribe        | `@libsql/client` libsql:// URL; keep warm via periodic ping or upgrade to Turso Pro |
+| Resend 100/day free tier limit       | Acceptable to ~100 subscribers; upgrade to Pro ($20/mo) before any blast send       |
+| DNS propagation delay                | Set up Vercel project first, then point DNS; expect up to 24hr                      |
+| Discord account compromised          | Clerk handles MFA options; enable 2FA on Discord account                            |
+| Clerk outage blocks admin access     | Rare; Clerk has 99.99% SLA. Fallback: use Resend API directly if urgent             |
+| Repo style drift from main blog      | Keep shared colors in a single `app.css`; no npm package needed                     |
+| Unconfirmed spam signups             | Double opt-in (confirmed=0 until email click) keeps list clean                      |
 
 ---
 
@@ -368,6 +387,7 @@ Implement Option A first (trivial addition to main blog repo).
 **Decision:** Standalone SvelteKit repo on Vercel with session-cookie admin auth
 **Drivers:** Design independence, separate deploy cadence, full aesthetic control, no third-party lock-in
 **Alternatives considered:**
+
 - Integrated into main blog (`/newsletter` route) — rejected: couples newsletter deploy to blog, harder to iterate UI independently
 - Beehiiv with custom CSS — rejected: limited terminal aesthetic control, animations impossible, font loading unreliable
 - Buttondown/ConvertKit — rejected: third-party lock-in, can't fully match hacker1db design
@@ -381,6 +401,7 @@ Implement Option A first (trivial addition to main blog repo).
 ---
 
 ## Changelog
+
 - Initial draft from conversation requirements
 - Added admin login + session auth (user request)
 - Merged NEWSLETTER_PLAN.md: Resend pricing, SEND_SECRET endpoint spec, double opt-in, email template details, full env vars, notes
