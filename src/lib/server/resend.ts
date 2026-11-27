@@ -25,7 +25,7 @@ export async function sendWelcomeEmail(
 	unsubscribeToken: string
 ): Promise<void> {
 	const siteUrl = getSiteUrl();
-	const confirmUrl = `${siteUrl}/api/confirm/?token=${encodeURIComponent(confirmationToken)}`;
+	const confirmUrl = `${siteUrl}/confirm/?token=${encodeURIComponent(confirmationToken)}`;
 	const unsubscribeUrl = `${siteUrl}/api/unsubscribe/?token=${encodeURIComponent(unsubscribeToken)}`;
 
 	const { data, error } = await getResend().emails.send({

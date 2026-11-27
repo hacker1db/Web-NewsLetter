@@ -12,3 +12,9 @@ CREATE TABLE IF NOT EXISTS subscribers (
 
 CREATE INDEX IF NOT EXISTS subscribers_active_created_at_idx
   ON subscribers (created_at) WHERE status = 'active';
+
+-- Confirmation emails: per-address resend cooldown and confirmation-link expiry.
+-- Rows created before this migration have no expiry, so their old links fail closed;
+-- those addresses can subscribe again to receive a new link.
+ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS last_sent_at TIMESTAMPTZ;
+ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS confirm_expires_at TIMESTAMPTZ;
