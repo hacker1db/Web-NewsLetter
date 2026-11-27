@@ -1,15 +1,16 @@
 import { generateKeyPairSync, sign } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { env } from './env';
-const { getSession } = vi.hoisted(() => ({ getSession: vi.fn() }));
+const { getSession, revokeSession } = vi.hoisted(() => ({ getSession: vi.fn(), revokeSession: vi.fn() }));
 vi.mock('@clerk/backend', async (importOriginal) => ({
 	...await importOriginal<typeof import('@clerk/backend')>(),
-	createClerkClient: vi.fn(() => ({ sessions: { getSession } }))
+	createClerkClient: vi.fn(() => ({ sessions: { getSession, revokeSession } }))
 }));
 vi.mock('$lib/server/db', () => ({ getConfirmedSubscribers: vi.fn(async () => []) }));
-import { createAdminSession, isAdmin, verifyAdminSession, verifyAdminToken } from '../src/lib/server/auth';
+import { createAdminSession, isAdmin, revokeAdminSession, verifyAdminSession, verifyAdminToken } from '../src/lib/server/auth';
 import { handle } from '../src/hooks.server';
 import { POST as login } from '../src/routes/api/auth/+server';
+import { POST as logout } from '../src/routes/api/logout/+server';
 import { POST as send } from '../src/routes/api/send/+server';
 import { actions, load as adminLoad } from '../src/routes/admin/+page.server';
 
@@ -41,7 +42,9 @@ function event(body: unknown = {}, userId?: string) {
 beforeEach(() => {
 	for (const name of Object.keys(env)) delete env[name];
 	env.ADMIN_USER_IDS = ' user_admin, user_other ';
-	env.CLERK_SECRET_KEY = 'test-only-generated-session-signing-key';
+	env.CLERK_SECRET_KEY = 'sk_test_only-generated-clerk-api-key';
+	env.ADMIN_SESSION_SECRET = 'test-only-generated-admin-session-hmac-secret';
+	revokeSession.mockReset().mockResolvedValue({});
 	env.CLERK_JWT_KEY = keys.publicKey.export({ type: 'spki', format: 'pem' }).toString();
 	getSession.mockReset().mockImplementation(async () => ({
 		id: 'sess_test', userId: 'user_admin', status: 'active', expireAt: Date.now() + 86400000
@@ -159,5 +162,47 @@ describe('request boundaries', () => {
 		e.request.headers.set('origin', 'https://attacker.example');
 		expect((await login(e as never)).status).toBe(403);
 		expect((await send(e as never)).status).toBe(403);
+	});
+	it('logout revokes the Clerk session and always clears the cookie', async () => {
+		const session = await createAdminSession(token());
+		const e = event();
+		e.cookies.get.mockReturnValue(session!.token);
+		await expect(logout(e as never)).rejects.toMatchObject({ status: 302, location: '/login/' });
+		expect(revokeSession).toHaveBeenCalledWith('sess_test');
+		expect(e.cookies.delete).toHaveBeenCalledWith('admin_session', { path: '/' });
+		revokeSession.mockReset().mockRejectedValue(new Error('Service unavailable'));
+		const outage = event();
+		outage.cookies.get.mockReturnValue(session!.token);
+		await expect(logout(outage as never)).rejects.toMatchObject({ status: 302 });
+		expect(outage.cookies.delete).toHaveBeenCalledWith('admin_session', { path: '/' });
+	});
+	it('logout never revokes for forged or mismatched cookies', async () => {
+		expect(await revokeAdminSession(undefined)).toBe(false);
+		expect(await revokeAdminSession('user_admin.sig')).toBe(false);
+		const session = await createAdminSession(token());
+		expect(await revokeAdminSession(`A${session!.token.slice(1)}`)).toBe(false);
+		getSession.mockResolvedValue({ id: 'sess_test', userId: 'user_other', status: 'active', expireAt: Date.now() + 86400000 });
+		expect(await revokeAdminSession(session!.token)).toBe(false);
+		expect(revokeSession).not.toHaveBeenCalled();
+	});
+});
+
+describe('admin session secret', () => {
+	it('fails closed when ADMIN_SESSION_SECRET is missing or short', async () => {
+		const session = await createAdminSession(token());
+		expect(session).not.toBeNull();
+		for (const value of [undefined, '', 'too-short']) {
+			if (value === undefined) delete env.ADMIN_SESSION_SECRET; else env.ADMIN_SESSION_SECRET = value;
+			expect(await createAdminSession(token())).toBeNull();
+			expect(await verifyAdminSession(session!.token)).toBeNull();
+		}
+	});
+	it('signs with ADMIN_SESSION_SECRET, not the Clerk secret key', async () => {
+		const session = await createAdminSession(token());
+		expect(await verifyAdminSession(session!.token)).toEqual({ userId: 'user_admin' });
+		env.CLERK_SECRET_KEY = 'sk_test_only-rotated-clerk-api-key';
+		expect(await verifyAdminSession(session!.token)).toEqual({ userId: 'user_admin' });
+		env.ADMIN_SESSION_SECRET = 'test-only-rotated-admin-session-hmac-secret';
+		expect(await verifyAdminSession(session!.token)).toBeNull();
 	});
 });
