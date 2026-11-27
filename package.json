@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "db:migrate": "node scripts/migrate.mjs",
-    "test": "vitest run --config vitest.config.ts"
+    "test": "svelte-kit sync && vitest run --config vitest.config.ts"
   },
   "devDependencies": {
     "@sveltejs/adapter-vercel": "^5.7.3",
