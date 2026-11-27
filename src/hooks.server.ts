@@ -1,8 +1,8 @@
 import type { Handle } from '@sveltejs/kit';
 import { verifyAdminSession } from '$lib/server/auth';
 
-// The Content-Security-Policy (including frame-ancestors) comes from kit.csp in
-// svelte.config.js; these headers cover the rest, including older browsers.
+// The Content-Security-Policy (including frame-ancestors) comes from the sveltekit() csp option in
+// vite.config.ts; these headers cover the rest, including older browsers.
 export const SECURITY_HEADERS: Record<string, string> = {
 	'X-Frame-Options': 'DENY',
 	'X-Content-Type-Options': 'nosniff',
