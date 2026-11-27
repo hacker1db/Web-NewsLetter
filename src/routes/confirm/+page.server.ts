@@ -1,22 +1,26 @@
 import { redirect } from '@sveltejs/kit';
-import type { PageServerLoad } from './$types';
+import type { Actions, PageServerLoad } from './$types';
 
+// Opening the link only shows a confirm button. Mail scanners and link previews fetch
+// URLs with GET, so the subscription changes only on the POST that the button sends.
 export const load: PageServerLoad = async ({ url }) => {
 	const token = url.searchParams.get('token');
-	if (!token) {
-		throw redirect(302, '/?error=invalid');
-	}
+	if (!token) throw redirect(303, '/?error=invalid');
+	return { token };
+};
 
-	try {
-		const { confirmSubscriber } = await import('$lib/server/db');
-		const confirmed = await confirmSubscriber(token);
-		if (confirmed) {
-			throw redirect(302, '/success/?confirmed=true');
+export const actions: Actions = {
+	default: async ({ request }) => {
+		const token = (await request.formData()).get('token');
+		if (typeof token !== 'string' || !token) throw redirect(303, '/?error=invalid');
+
+		let confirmed = false;
+		try {
+			const { confirmSubscriber } = await import('$lib/server/db');
+			confirmed = await confirmSubscriber(token);
+		} catch {
+			confirmed = false;
 		}
-	} catch (err) {
-		// Re-throw redirects
-		if (err && typeof err === 'object' && 'status' in err) throw err;
+		throw redirect(303, confirmed ? '/success/?confirmed=true' : '/?error=invalid');
 	}
-
-	throw redirect(302, '/?error=invalid');
 };
