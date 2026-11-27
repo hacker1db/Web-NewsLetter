@@ -1,4 +1,4 @@
-// Content-Security-Policy for every page. Kept in plain JavaScript so svelte.config.js
+// Content-Security-Policy for every page. Kept in plain JavaScript so vite.config.ts
 // can import it and tests can check it.
 
 /** Exact @clerk/ui release paired with the installed @clerk/clerk-js (6.37.0). */

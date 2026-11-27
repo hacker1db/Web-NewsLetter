@@ -6,7 +6,7 @@
 - Production branch: `main`
 - Framework: SvelteKit
 - Root directory: repository root (`.`), not the local `main/` worktree folder
-- Node.js version: 22.x (matches `svelte.config.js`)
+- Node.js version: 22.x (matches the adapter `runtime` in `vite.config.ts`)
 - Install command: `pnpm install --frozen-lockfile`
 - Build command: `pnpm build`
 - Output directory: framework default
