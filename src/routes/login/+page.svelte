@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { Clerk } from '@clerk/clerk-js';
+	import { CLERK_UI_VERSION, clerkFrontendApiHost } from '$lib/csp.js';
 
 	// Extend Window to declare the internal Clerk UI constructor
 	// This is an undocumented Clerk internal — typed as unknown intentionally
@@ -27,11 +28,12 @@
 		}
 
 		try {
-			const clerkDomain = atob(publishableKey.split('_')[2]).slice(0, -1);
+			const clerkDomain = clerkFrontendApiHost(publishableKey);
+			if (!clerkDomain) throw new Error('Invalid VITE_CLERK_PUBLISHABLE_KEY');
 
 			await new Promise<void>((resolve, reject) => {
 				const script = document.createElement('script');
-				script.src = `https://${clerkDomain}/npm/@clerk/ui@1/dist/ui.browser.js`;
+				script.src = `https://${clerkDomain}/npm/@clerk/ui@${CLERK_UI_VERSION}/dist/ui.browser.js`;
 				script.async = true;
 				script.crossOrigin = 'anonymous';
 				script.onload = () => resolve();
